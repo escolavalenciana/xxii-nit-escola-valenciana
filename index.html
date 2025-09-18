@@ -165,16 +165,18 @@ function toCSVFromSheet(viewUrl){
   const m = viewUrl.match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^\/]+)(?:\/.*)?$/);
   if(!m) return null;
   const id = m[1];
-  const gidMatch = viewUrl.match(/[?&]gid=(\\d+)/);
+  const gidMatch = viewUrl.match(/[?&]gid=(\d+)/);
   const gid = gidMatch ? gidMatch[1] : '0';
-  return \`https://docs.google.com/spreadsheets/d/\${id}/export?format=csv&gid=\${gid}\`;
+  return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
 }
 
 async function loadCSVByUrl(url){
   try{
     errorBox.classList.add('hidden'); errorBox.textContent='';
     const res = await fetch(url, {cache:'no-store'});
-    if(!res.ok){ throw new Error('HTTP '+res.status+' '+res.statusText); }
+    if(!res.ok){
+      throw new Error('HTTP '+res.status+' '+res.statusText);
+    }
     const text = await res.text();
     parseCSV(text);
 
@@ -201,7 +203,7 @@ async function loadCSVByUrl(url){
 
 function parseCSV(text){
   rows = []; header = [];
-  const lines = text.replace(/\\r/g,'').split('\\n').filter(l=>l.trim().length>0);
+  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.trim().length>0);
   if(!lines.length) return;
   header = splitCSVLine(lines[0]);
   for(let i=1;i<lines.length;i++){
@@ -236,7 +238,7 @@ function buildMap(){
 }
 function updateSummary(){
   summary.className='status ok';
-  summary.textContent = \`Càrrega correcta · \${validMap.size} codis · Columna ID: \${codeKey}\`;
+  summary.textContent = `Càrrega correcta · ${validMap.size} codis · Columna ID: ${codeKey}`;
 }
 
 loadSheetBtn.addEventListener('click', async ()=>{
@@ -247,7 +249,9 @@ loadSheetBtn.addEventListener('click', async ()=>{
   lastCsvUrl = csvUrl;
   computedUrl.textContent = 'CSV: '+csvUrl;
   testCsvLink.href = csvUrl;
-  try{ await loadCSVByUrl(csvUrl); }catch(e){ console.error(e); }
+  try{
+    await loadCSVByUrl(csvUrl);
+  }catch(e){ console.error(e); }
 });
 refreshBtn.addEventListener('click', async ()=>{
   if(!lastCsvUrl){ alert('Carrega abans un full.'); return; }
@@ -255,7 +259,9 @@ refreshBtn.addEventListener('click', async ()=>{
     await loadCSVByUrl(lastCsvUrl);
     summary.className='status ok';
     summary.textContent='Dades refrescades des del full.';
-  }catch(e){ console.error(e); }
+  }catch(e){
+    console.error(e);
+  }
 });
 
 async function startCamera(){
@@ -294,7 +300,7 @@ manualCode.addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); handleCode(manualCode.value); manualCode.select(); }
 });
 
-async function handleCode(codeRaw){
+function handleCode(codeRaw){
   const code = String(codeRaw||'').trim();
   if(!code) return;
   const rec = validMap.get(code);
@@ -309,15 +315,12 @@ async function handleCode(codeRaw){
     addRecent(now, code, rec.row, 'dup');
     return;
   }
-
-  // Envia primer al Google Form (si està configurat)
+  // Enviar al Google Form en segon pla (si està configurat)
   const action = formActionInput.value.trim();
   const field = formFieldInput.value.trim();
   if(action && field){
     submitToGoogleForm(action, field, code);
   }
-
-  // Després marca validat en aquesta sessió
   rec.checked = true;
   countOk.textContent = String(Number(countOk.textContent||'0') + 1);
   scanStatus.className='status ok'; scanStatus.textContent='VALIDAT · '+code;
@@ -325,20 +328,13 @@ async function handleCode(codeRaw){
 }
 
 function submitToGoogleForm(action, field, code){
-  // Formulari ocult cap a /formResponse (no canvia de pàgina)
   hiddenForm.action = action;
   hiddenForm.innerHTML = '';
   const input = document.createElement('input');
   input.type = 'hidden'; input.name = field; input.value = code;
   hiddenForm.appendChild(input);
+  // Evita canviar de pàgina: target=hiddenFrame
   hiddenForm.submit();
-
-  // Fallback addicional: POST no-cors (no bloquejant)
-  try{
-    const data = new URLSearchParams(); data.append(field, code);
-    data.append('submit','Submit');
-    fetch(action, { method:'POST', mode:'no-cors', body:data });
-  }catch(_){}
 }
 
 function addRecent(date, code, row, kind){
@@ -352,7 +348,7 @@ function addRecent(date, code, row, kind){
 }
 function statusPill(kind){
   if(kind==='ok') return '<span class="pill pill-ok">OK</span>';
-  if(kind==='dup') return '<span class="pill pill-dup">WARN</span>';
+  if(kind==='dup') return '<span class="pill pill-dup">DUP</span>';
   return '<span class="pill" style="background:#fee2e2;color:#991b1b;">N/D</span>';
 }
 function escapeHtml(s){
