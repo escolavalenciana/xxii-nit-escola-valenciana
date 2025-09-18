@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validació QR — La Nit (Google Sheets + Google Forms)</title>
+<style>
+  :root{ --ok:#10b981; --warn:#f59e0b; --err:#ef4444; --ink:#0f172a; --muted:#6b7280; --bg:#ffffff; }
+  *{box-sizing:border-box;}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+       margin:0; background:var(--bg); color:var(--ink);}
+  header{padding:16px 20px; border-bottom:1px solid #e5e7eb; display:flex; gap:16px; align-items:center; flex-wrap:wrap;}
+  header h1{font-size:18px; margin:0; font-weight:700;}
+  main{max-width:760px; margin:0 auto; padding:16px;}
+  .panel{border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:16px;}
+  .row{display:flex; gap:16px; flex-wrap:wrap;}
+  .row > *{flex:1 1 320px; min-width:0;}
+  label{font-weight:600; font-size:14px; display:block; margin-bottom:6px;}
+  input[type="text"], select, button{width:100%; max-width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px;}
+  button{background:#000; color:#ff0; font-weight:700; border:none; cursor:pointer; transition:.2s;}
+  button:hover{background:#ff0; color:#000;}
+  .hint{color:var(--muted); font-size:12px; margin-top:6px;}
+  .status{border-radius:12px; padding:12px 14px; font-weight:700; display:flex; align-items:center; gap:10px; min-height:42px;}
+  .ok{background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;}
+  .err{background:#fef2f2; color:#991b1b; border:1px solid #fecaca;}
+  .warn{background:#fffbeb; color:#92400e; border:1px solid #fde68a;}
+  .grid{width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed;}
+  .grid th,.grid td{border-bottom:1px solid #e5e7eb; padding:8px 10px; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700;}
+  .pill-ok{background:#d1fae5; color:#065f46;} .pill-dup{background:#fee2e2; color:#991b1b;}
+  .controls{display:flex; gap:10px; flex-wrap:wrap;}
+  #video{width:100%; border-radius:12px; background:#111; aspect-ratio:16/9; object-fit:cover;}
+  .muted{color:var(--muted);} .small{font-size:12px;}
+  .hidden{display:none !important;}
+  .count{font-weight:700;}
+  iframe{display:none;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Validació QR — La Nit</h1>
+  <div class="muted small">Enllaça un Google Sheets (vista) · Columna de codi: <strong>ID</strong> · Registre via Google Forms</div>
+</header>
+<main>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>URL del Google Sheets (vista, compartit amb “Qui tinga l’enllaç”)</label>
+        <input type="text" id="sheetUrl" placeholder="Ex.: https://docs.google.com/spreadsheets/d/ID/edit?usp=sharing">
+        <div class="controls" style="margin-top:8px;">
+          <button id="loadSheetBtn">Carrega</button>
+          <button id="refreshBtn" disabled>Actualitza</button>
+        </div>
+        <div class="hint">Si el full té diverses pestanyes, afegeix <code>&gid=...</code> a l'URL per escollir-ne una.</div>
+      </div>
+      <div>
+        <label>Resum</label>
+        <div id="summary" class="status warn">Esperant URL…</div>
+        <div class="hint"><span class="count" id="countOk">0</span> validats (sessió) · <span class="count" id="countTotal">0</span> totals</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div>
+        <label>URL del Google Form (formResponse)</label>
+        <input type="text" id="formAction" placeholder="Ex.: https://docs.google.com/forms/d/e/FORM_ID/formResponse">
+      </div>
+      <div>
+        <label>Nom del camp del Form</label>
+        <input type="text" id="formField" placeholder="Ex.: entry.1234567890 (camp per a l'ID)">
+      </div>
+    </div>
+
+    <div id="fallbackSelector" class="row hidden" style="margin-top:12px;">
+      <div>
+        <label>Columna de codi (fallback)</label>
+        <select id="codeColumn"></select>
+        <div class="hint">Només apareix si no es detecta la columna <strong>ID</strong>.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>Escaneig amb càmera</label>
+        <video id="video" playsinline></video>
+        <div class="controls" style="margin-top:10px;">
+          <button id="startBtn" disabled>Inicia càmera</button>
+          <button id="stopBtn" disabled>Para</button>
+        </div>
+        <div class="hint">HTTPS obligatori (GitHub Pages ho és).</div>
+      </div>
+      <div>
+        <label>Entrada manual (rescat)</label>
+        <input type="text" id="manualCode" placeholder="Escriu o enganxa codi i prem Enter">
+        <div class="status warn" id="scanStatus">Esperant…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>Últims escanejos</label>
+        <table class="grid" id="recentTable">
+          <thead><tr><th style="width:90px">Hora</th><th style="width:170px">Codi</th><th>Nom</th><th>Email</th><th style="width:70px">Estat</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <form id="hiddenForm" method="POST" target="hiddenFrame" class="hidden"></form>
+  <iframe name="hiddenFrame"></iframe>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+</main>
+
+<script>
+// Càmera (BarcodeDetector)
+let BarcodeReady = ('BarcodeDetector' in window);
+let detector = null;
+if (BarcodeReady) {
+  try { detector = new BarcodeDetector({formats: ['qr_code']}); } catch(e){ BarcodeReady = false; }
+}
+
+// Dades en memòria (sessió local)
+let rows = [], header = [], codeKey = 'ID';
+const validMap = new Map(); // code -> {row, checked}
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let stream = null, loopId = null;
+
+// UI refs
+const summary = document.getElementById('summary');
+const scanStatus = document.getElementById('scanStatus');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const manualCode = document.getElementById('manualCode');
+const recentTable = document.querySelector('#recentTable tbody');
+const loadSheetBtn = document.getElementById('loadSheetBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const sheetUrlInput = document.getElementById('sheetUrl');
+const fallbackSelector = document.getElementById('fallbackSelector');
+const codeColumn = document.getElementById('codeColumn');
+const countOk = document.getElementById('countOk');
+const countTotal = document.getElementById('countTotal');
+const formActionInput = document.getElementById('formAction');
+const formFieldInput = document.getElementById('formField');
+const hiddenForm = document.getElementById('hiddenForm');
+
+let lastCsvUrl = null;
+
+// Converteix una URL de vista a CSV
+function toCSVFromSheet(viewUrl){
+  if(!viewUrl) return null;
+  const m = viewUrl.match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^\/]+)(?:\/.*)?$/);
+  if(!m) return null;
+  const id = m[1];
+  const gidMatch = viewUrl.match(/[?&]gid=(\d+)/);
+  const gid = gidMatch ? gidMatch[1] : '0';
+  return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+}
+
+// Carrega CSV i munta el mapa
+async function loadCSVByUrl(url){
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const text = await res.text();
+  parseCSV(text);
+
+  const hasID = header.some(h => h.trim().toLowerCase() === 'id');
+  if(hasID){
+    codeKey = header.find(h => h.trim().toLowerCase() === 'id');
+    fallbackSelector.classList.add('hidden');
+  }else{
+    fallbackSelector.classList.remove('hidden');
+    codeColumn.innerHTML = '';
+    header.forEach(h=>{ const opt=document.createElement('option'); opt.value=h; opt.textContent=h; codeColumn.appendChild(opt); });
+    codeColumn.onchange = ()=>{ codeKey = codeColumn.value; buildMap(); updateSummary(); };
+    codeKey = header[0];
+  }
+
+  buildMap(); updateSummary();
+  startBtn.disabled = false; refreshBtn.disabled = false;
+}
+
+function parseCSV(text){
+  rows = []; header = [];
+  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.trim().length>0);
+  if(!lines.length) return;
+  header = splitCSVLine(lines[0]);
+  for(let i=1;i<lines.length;i++){
+    const vals = splitCSVLine(lines[i]);
+    const obj = {};
+    for(let j=0;j<header.length;j++){ obj[header[j]] = (vals[j] ?? '').trim(); }
+    rows.push(obj);
+  }
+}
+function splitCSVLine(line){
+  const out = []; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c=='"'){ if(inQ && line[i+1]=='"'){cur+='"'; i++;} else {inQ=!inQ;} }
+    else if(c==',' && !inQ){ out.push(cur); cur=''; }
+    else { cur+=c; }
+  }
+  out.push(cur); return out;
+}
+function buildMap(){
+  validMap.clear();
+  let ok=0;
+  for(const r of rows){
+    const code = (r[codeKey] || '').trim();
+    if(!code) continue;
+    const checked = false; // només sessió local
+    if(checked) ok++;
+    validMap.set(code, {row:r, checked});
+  }
+  countOk.textContent = ok;
+  countTotal.textContent = validMap.size;
+}
+function updateSummary(){
+  summary.className='status ok';
+  summary.textContent = `Càrrega correcta · ${validMap.size} codis · Columna ID: ${codeKey}`;
+}
+
+// UI esdeveniments
+loadSheetBtn.addEventListener('click', async ()=>{
+  const v = sheetUrlInput.value.trim();
+  if(!v){ alert('Posa l’enllaç de visualització del Google Sheets.'); return; }
+  const csvUrl = toCSVFromSheet(v);
+  if(!csvUrl){ alert('Enllaç de Google Sheets no vàlid.'); return; }
+  lastCsvUrl = csvUrl;
+  try{
+    await loadCSVByUrl(csvUrl);
+  }catch(e){
+    alert('No s’ha pogut carregar el full. Comprova que “Qui tinga l’enllaç” pot veure’l.'); console.error(e);
+  }
+});
+refreshBtn.addEventListener('click', async ()=>{
+  if(!lastCsvUrl){ alert('Carrega abans un full.'); return; }
+  try{
+    await loadCSVByUrl(lastCsvUrl);
+    summary.className='status ok';
+    summary.textContent='Dades refrescades des del full.';
+  }catch(e){
+    alert('No s’ha pogut refrescar el full.'); console.error(e);
+  }
+});
+
+// Escaneig
+async function startCamera(){
+  if(stream) return;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    video.srcObject = stream;
+    await video.play();
+    startBtn.disabled = true; stopBtn.disabled = false; scanLoop();
+  }catch(e){ alert('No s’ha pogut iniciar la càmera. HTTPS i permisos necessaris.'); }
+}
+function stopCamera(){
+  if(loopId){ cancelAnimationFrame(loopId); loopId=null; }
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  stopBtn.disabled = true; startBtn.disabled = false;
+}
+startBtn.addEventListener('click', startCamera);
+stopBtn.addEventListener('click', stopCamera);
+
+async function scanLoop(){
+  if(!video.videoWidth){ loopId=requestAnimationFrame(scanLoop); return; }
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  let code=null;
+  if(('BarcodeDetector' in window) && detector){
+    try{
+      const barcodes = await detector.detect(canvas);
+      if(barcodes && barcodes.length){ code = (barcodes[0].rawValue || '').trim(); }
+    }catch(e){}
+  }
+  if(code){ handleCode(code); }
+  loopId = requestAnimationFrame(scanLoop);
+}
+
+manualCode.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); handleCode(manualCode.value); manualCode.select(); }
+});
+
+// Validació local + enviament a Google Forms (registre)
+function handleCode(codeRaw){
+  const code = String(codeRaw||'').trim();
+  if(!code) return;
+  const rec = validMap.get(code);
+  const now = new Date();
+  if(!rec){
+    scanStatus.className='status err'; scanStatus.textContent='No trobat · '+code;
+    addRecent(now, code, {Nom:'',Email:''}, 'bad');
+    return;
+  }
+  if(rec.checked){
+    scanStatus.className='status warn'; scanStatus.textContent='Ja validat (aquesta sessió) · '+code;
+    addRecent(now, code, rec.row, 'dup');
+    return;
+  }
+  // Enviar al Google Form (si està configurat)
+  const action = formActionInput.value.trim();
+  const field = formFieldInput.value.trim();
+  if(action && field){
+    submitToGoogleForm(action, field, code);
+  }
+  rec.checked = true;
+  countOk.textContent = String(Number(countOk.textContent||'0') + 1);
+  scanStatus.className='status ok'; scanStatus.textContent='VALIDAT · '+code;
+  addRecent(now, code, rec.row, 'ok');
+}
+
+function submitToGoogleForm(action, field, code){
+  // Construeix un formulari ocult per POST cap a /formResponse (sense CORS)
+  hiddenForm.action = action;
+  hiddenForm.innerHTML = '';
+  const input = document.createElement('input');
+  input.type = 'hidden'; input.name = field; input.value = code;
+  hiddenForm.appendChild(input);
+
+  // (Opcional) time stamp
+  // const inputTs = document.createElement('input');
+  // inputTs.type = 'hidden'; inputTs.name = 'entry.TIMESTAMP_FIELD_ID';
+  // inputTs.value = new Date().toISOString();
+  // hiddenForm.appendChild(inputTs);
+
+  // Evita que Google redireccione la pestanya: envia cap a iframe ocult
+  hiddenForm.submit();
+}
+
+function addRecent(date, code, row, kind){
+  const tr=document.createElement('tr');
+  const name = row?.Nom || row?.nom || row?.FirstName || row?.first_name || '';
+  const email = row?.Email || row?.email || '';
+  tr.innerHTML = `<td>${date.toLocaleTimeString()}</td><td>${code}</td>
+                  <td>${escapeHtml(name)}</td><td>${escapeHtml(email)}</td><td>${statusPill(kind)}</td>`;
+  recentTable.prepend(tr);
+  while(recentTable.children.length>20){ recentTable.removeChild(recentTable.lastChild); }
+}
+function statusPill(kind){
+  if(kind==='ok') return '<span class="pill pill-ok">OK</span>';
+  if(kind==='dup') return '<span class="pill pill-dup">DUP</span>';
+  return '<span class="pill" style="background:#fee2e2;color:#991b1b;">N/D</span>';
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', \"'\":'&#39;' }[m])); }
+</script>
+</body>
+</html>
