@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validació QR — La Nit (GitHub Pages)</title>
+<style>
+  :root{
+    --ok:#10b981; --warn:#f59e0b; --err:#ef4444; --ink:#0f172a; --muted:#6b7280; --bg:#ffffff;
+  }
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+       margin:0; background:var(--bg); color:var(--ink);}
+  header{padding:16px 20px; border-bottom:1px solid #e5e7eb; display:flex; gap:16px; align-items:center; flex-wrap:wrap;}
+  header h1{font-size:18px; margin:0; font-weight:700;}
+  main{max-width:1000px; margin:0 auto; padding:16px;}
+  .panel{border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:16px;}
+  .row{display:flex; gap:16px; flex-wrap:wrap;}
+  .row > *{flex:1 1 260px;}
+  label{font-weight:600; font-size:14px; display:block; margin-bottom:6px;}
+  input[type="file"], select, button, input[type="text"]{width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px;}
+  button{background:#000; color:#ff0; font-weight:700; border:none; cursor:pointer; transition:.2s;}
+  button:hover{background:#ff0; color:#000;}
+  .hint{color:var(--muted); font-size:12px; margin-top:6px;}
+  .status{border-radius:12px; padding:12px 14px; font-weight:700; display:flex; align-items:center; gap:10px; min-height:42px;}
+  .ok{background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;}
+  .err{background:#fef2f2; color:#991b1b; border:1px solid #fecaca;}
+  .warn{background:#fffbeb; color:#92400e; border:1px solid #fde68a;}
+  .grid{width:100%; border-collapse:collapse; font-size:14px;}
+  .grid th,.grid td{border-bottom:1px solid #e5e7eb; padding:8px 10px; text-align:left;}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700;}
+  .pill-ok{background:#d1fae5; color:#065f46;} .pill-dup{background:#fee2e2; color:#991b1b;}
+  .controls{display:flex; gap:10px; flex-wrap:wrap;}
+  #video{width:100%; border-radius:12px; background:#111; aspect-ratio:16/9; object-fit:cover;}
+  .muted{color:var(--muted);} .small{font-size:12px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Validació QR — La Nit (GitHub Pages)</h1>
+  <div class="muted small">Carrega el CSV d'inscripcions · Escaneja · Exporta assistència</div>
+</header>
+<main>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>Carrega CSV per URL (Drive/Sheets)</label>
+        <input type="text" id="csvUrl" placeholder="Enganxa ací l’enllaç públic (Drive/Sheets) i prem 'Carrega'">
+        <button id="loadUrlBtn">Carrega</button>
+        <div class="hint">Drive: https://drive.google.com/uc?export=download&id=FILE_ID · Sheets: https://docs.google.com/spreadsheets/d/ID/export?format=csv</div>
+      </div>
+      <div>
+        <label>o Carrega el CSV des del dispositiu</label>
+        <input type="file" id="csvFile" accept=".csv">
+        <div class="hint">El CSV ha d'incloure una columna amb el <strong>codi/ID</strong> del QR.</div>
+      </div>
+      <div>
+        <label>Columna del codi</label>
+        <select id="codeColumn" disabled></select>
+        <div class="hint">Tria quina columna conté el codi (p. ex. <em>id</em>).</div>
+      </div>
+      <div>
+        <label>Resum</label>
+        <div id="summary" class="status warn">Carrega el CSV…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>Escaneig amb càmera</label>
+        <video id="video" playsinline></video>
+        <div class="controls" style="margin-top:10px;">
+          <button id="startBtn" disabled>Inicia càmera</button>
+          <button id="stopBtn" disabled>Para</button>
+        </div>
+        <div class="hint">La càmera requereix <strong>HTTPS</strong> (GitHub Pages ho té) o <em>localhost</em>.</div>
+      </div>
+      <div>
+        <label>Entrada manual (rescat)</label>
+        <input type="text" id="manualCode" placeholder="Enganxa o escriu un codi i prem Enter">
+        <div class="status warn" id="scanStatus">Esperant…</div>
+        <div class="hint">També pots escanejar amb una app QR i enganxar el codi ací.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>Últims escanejos</label>
+        <table class="grid" id="recentTable">
+          <thead><tr><th>Hora</th><th>Codi</th><th>Nom</th><th>Email</th><th>Estat</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div>
+        <label>Exportar assistència</label>
+        <div class="controls">
+          <button id="exportChecked" disabled>Descarrega CSV d’assistits</button>
+          <button id="exportAll" disabled>Descarrega CSV complet</button>
+        </div>
+        <div class="hint">El CSV d’assistits porta <em>checkin=1</em> per a reimportar al CRM.</div>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+</main>
+
+<script>
+let BarcodeReady = ('BarcodeDetector' in window);
+let detector = null;
+if (BarcodeReady) {
+  try { detector = new BarcodeDetector({formats: ['qr_code']}); } catch(e){ BarcodeReady = false; }
+}
+let rows = [], header = [], codeKey = null;
+const validMap = new Map();
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let stream = null, loopId = null;
+const csvFile = document.getElementById('csvFile');
+const codeColumn = document.getElementById('codeColumn');
+const summary = document.getElementById('summary');
+const scanStatus = document.getElementById('scanStatus');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const manualCode = document.getElementById('manualCode');
+const recentTable = document.querySelector('#recentTable tbody');
+const exportCheckedBtn = document.getElementById('exportChecked');
+const exportAllBtn = document.getElementById('exportAll');
+const loadUrlBtn = document.getElementById('loadUrlBtn');
+
+document.getElementById('csvFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const text = await file.text();
+  parseCSV(text); populateColumnSelector(); buildMap(); updateSummary();
+  exportCheckedBtn.disabled = false; exportAllBtn.disabled = false;
+});
+loadUrlBtn.addEventListener('click', loadCSVFromUrl);
+
+function toDirectCSV(url){
+  if(!url) return url;
+  try{
+    let mSheets = url.match(/^https:\\/\\/docs\\.google\\.com\\/spreadsheets\\/d\\/([^\\/]+)(?:\\/.*)?$/);
+    if(mSheets){
+      const id = mSheets[1];
+      const gidMatch = url.match(/[?&]gid=(\\d+)/);
+      const gid = gidMatch ? gidMatch[1] : '0';
+      return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+    }
+    let mDrive = url.match(/^https:\\/\\/drive\\.google\\.com\\/file\\/d\\/([^\\/]+)\\/view/);
+    if(mDrive){
+      const id = mDrive[1];
+      return `https://drive.google.com/uc?export=download&id=${id}`;
+    }
+    return url;
+  }catch(e){ return url; }
+}
+async function loadCSVFromUrl(){
+  const inp = document.getElementById('csvUrl');
+  let url = toDirectCSV(inp.value.trim());
+  if(!url){ alert('Posa un enllaç públic a CSV.'); return; }
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text = await res.text();
+    parseCSV(text); populateColumnSelector(); buildMap(); updateSummary();
+    exportCheckedBtn.disabled = false; exportAllBtn.disabled = false;
+    alert('CSV carregat correctament des de la URL.');
+  }catch(e){
+    alert('No s’ha pogut carregar el CSV des de la URL. Revisa que l’enllaç siga públic i en format CSV.');
+    console.error(e);
+  }
+}
+
+function parseCSV(text){
+  rows = []; header = [];
+  const lines = text.replace(/\\r/g,'').split('\\n').filter(l=>l.trim().length>0);
+  if(!lines.length) return;
+  header = splitCSVLine(lines[0]);
+  for(let i=1;i<lines.length;i++){
+    const vals = splitCSVLine(lines[i]);
+    const obj = {};
+    for(let j=0;j<header.length;j++){ obj[header[j]] = (vals[j] ?? '').trim(); }
+    rows.push(obj);
+  }
+}
+function splitCSVLine(line){
+  const out = []; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c=='"'){ if(inQ && line[i+1]=='"'){cur+='"'; i++;} else {inQ=!inQ;} }
+    else if(c==',' && !inQ){ out.push(cur); cur=''; }
+    else { cur+=c; }
+  }
+  out.push(cur); return out;
+}
+function populateColumnSelector(){
+  codeColumn.innerHTML = '';
+  header.forEach(h=>{ const opt=document.createElement('option'); opt.value=h; opt.textContent=h; codeColumn.appendChild(opt); });
+  codeColumn.disabled = false;
+  let idx = header.findIndex(h=>/^id$/i.test(h));
+  if(idx<0) idx=0;
+  codeColumn.selectedIndex = idx;
+  codeKey = header[codeColumn.selectedIndex];
+  codeColumn.addEventListener('change', ()=>{ codeKey = header[codeColumn.selectedIndex]; buildMap(); updateSummary(); });
+}
+function buildMap(){
+  validMap.clear();
+  for(const r of rows){
+    const code = (r[codeKey] || '').trim();
+    if(!code) continue;
+    validMap.set(code, {row:r, checked:false, ts:null});
+  }
+}
+function updateSummary(){
+  summary.className='status ok';
+  summary.textContent = `Càrrega correcta · ${validMap.size} codis`;
+  startBtn.disabled = false;
+}
+async function startCamera(){
+  if(stream) return;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    video.srcObject = stream;
+    await video.play();
+    startBtn.disabled = true; stopBtn.disabled = false; scanLoop();
+  }catch(e){ alert('No s’ha pogut iniciar la càmera. Prova HTTPS o localhost, o usa l’entrada manual.'); }
+}
+function stopCamera(){
+  if(loopId){ cancelAnimationFrame(loopId); loopId=null; }
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  stopBtn.disabled = true; startBtn.disabled = false;
+}
+async function scanLoop(){
+  if(!video.videoWidth){ loopId=requestAnimationFrame(scanLoop); return; }
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  let code=null;
+  if(('BarcodeDetector' in window) && detector){
+    try{
+      const barcodes = await detector.detect(canvas);
+      if(barcodes && barcodes.length){ code = (barcodes[0].rawValue || '').trim(); }
+    }catch(e){}
+  }
+  if(code){ handleCode(code); }
+  loopId = requestAnimationFrame(scanLoop);
+}
+function handleCode(codeRaw){
+  const code = String(codeRaw).trim();
+  if(!code) return;
+  const rec = validMap.get(code);
+  const now = new Date();
+  if(rec && !rec.checked){
+    rec.checked = true; rec.ts = +now;
+    scanStatus.className='status ok'; scanStatus.textContent='VALIDAT · '+code;
+    addRecent(now, code, rec.row, 'ok');
+  }else if(rec && rec.checked){
+    scanStatus.className='status warn'; scanStatus.textContent='Ja validat · '+code;
+    addRecent(now, code, rec.row, 'dup');
+  }else{
+    scanStatus.className='status err'; scanStatus.textContent='No vàlid · '+code;
+    addRecent(now, code, {Nom:'',Email:''}, 'bad');
+  }
+}
+manualCode.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    e.preventDefault(); handleCode(manualCode.value); manualCode.select();
+  }
+});
+function addRecent(date, code, row, kind){
+  const tr=document.createElement('tr');
+  const name = row?.Nom || row?.nom || row?.FirstName || row?.first_name || '';
+  const email = row?.Email || row?.email || '';
+  tr.innerHTML = `<td>${date.toLocaleTimeString()}</td><td>${code}</td>
+                  <td>${escapeHtml(name)}</td><td>${escapeHtml(email)}</td><td>${statusPill(kind)}</td>`;
+  recentTable.prepend(tr);
+  while(recentTable.children.length>20){ recentTable.removeChild(recentTable.lastChild); }
+}
+function statusPill(kind){
+  if(kind==='ok') return '<span class="pill pill-ok">OK</span>';
+  if(kind==='dup') return '<span class="pill pill-dup">DUP</span>';
+  return '<span class="pill" style="background:#fee2e2;color:#991b1b;">N/D</span>';
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', \"'\":'&#39;' }[m])); }
+
+startBtn.addEventListener('click', startCamera);
+stopBtn.addEventListener('click', stopCamera);
+
+function downloadCSV(dataRows, filename){
+  const headers = Object.keys(rows[0]||{});
+  if(!headers.includes('checkin')) headers.push('checkin');
+  const lines = [headers.join(',')];
+  for(const r of dataRows){
+    const obj = {...r.row};
+    obj.checkin = r.checked ? '1' : '0';
+    lines.push(headers.map(h=>csvCell(obj[h] ?? '')).join(','));
+  }
+  const blob = new Blob([lines.join('\\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+function csvCell(val){
+  const s=String(val);
+  if(s.includes('\"') || s.includes(',') || s.includes('\\n')){ return '\"'+s.replace(/\"/g,'\"\"')+'\"'; }
+  return s;
+}
+exportCheckedBtn.addEventListener('click', ()=>{
+  const list = Array.from(validMap.values()).filter(v=>v.checked);
+  if(!list.length){ alert('Encara no hi ha cap assistent validat.'); return; }
+  downloadCSV(list, 'assistits.csv');
+});
+exportAllBtn.addEventListener('click', ()=>{
+  const list = Array.from(validMap.values());
+  if(!list.length){ alert('No hi ha dades.'); return; }
+  downloadCSV(list, 'assistencia_completa.csv');
+});
+</script>
+</body>
+</html>
