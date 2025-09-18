@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Validació QR — La Nit (Sheets + Form)</title>
+<title>Validació QR — La Nit (Sheets + Form · cooldown)</title>
 <style>
   :root{ --ok:#10b981; --warn:#f59e0b; --err:#ef4444; --ink:#0f172a; --muted:#6b7280; --bg:#ffffff; }
   *{box-sizing:border-box;}
@@ -16,7 +16,8 @@
   .row{display:flex; gap:16px; flex-wrap:wrap;}
   .row > *{flex:1 1 320px; min-width:0;}
   label{font-weight:600; font-size:14px; display:block; margin-bottom:6px;}
-  input[type="text"], select, button, a.button{width:100%; max-width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px;}
+  input[type="text"], input[type="range"], select, button, a.button{width:100%; max-width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px;}
+  input[type="range"]{padding:8px 0; border:none;}
   button, a.button{background:#000; color:#ff0; font-weight:700; border:none; cursor:pointer; transition:.2s; text-align:center; text-decoration:none; display:inline-block;}
   button:hover, a.button:hover{background:#ff0; color:#000;}
   .hint{color:var(--muted); font-size:12px; margin-top:6px;}
@@ -36,6 +37,8 @@
   .errorBox{border:1px solid #fecaca; background:#fef2f2; color:#991b1b; border-radius:12px; padding:10px; font-size:13px; margin-top:10px;}
   .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
   iframe{display:none;}
+  .inline{display:flex; align-items:center; gap:10px;}
+  .inline .val{min-width:3ch; text-align:right; font-variant-numeric: tabular-nums;}
 </style>
 </head>
 <body>
@@ -73,6 +76,17 @@
       <div>
         <label>Nom del camp del Form (tipus <code>entry.XXXXXXXXX</code>)</label>
         <input type="text" id="formField" placeholder="Ex.: entry.1234567890 (camp per a l'ID)">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div>
+        <label>Cooldown entre lectures (ms)</label>
+        <div class="inline">
+          <input type="range" id="cooldownSlider" min="500" max="4000" step="100" value="1500" />
+          <span class="val" id="cooldownVal">1500</span>
+        </div>
+        <div class="hint">Pausa mínima entre lectures (ex.: 1500ms = 1.5s). També s’ignoren relectures del mateix codi durant 2s.</div>
       </div>
     </div>
 
@@ -157,8 +171,21 @@ const computedUrl = document.getElementById('computedUrl');
 const formActionInput = document.getElementById('formAction');
 const formFieldInput = document.getElementById('formField');
 const hiddenForm = document.getElementById('hiddenForm');
+const cooldownSlider = document.getElementById('cooldownSlider');
+const cooldownVal = document.getElementById('cooldownVal');
 
 let lastCsvUrl = null;
+
+// Anti-spam / cooldown
+let blockUntil = 0;              // temps UNIX fins al qual “pares” la lectura
+let cooldownMs = parseInt(cooldownSlider.value, 10) || 1500; // pausa global entre lectures
+const lastSeenAt = new Map();    // codi -> timestamp última vegada vist
+const dedupeMs = 2000;           // no tornar a processar el mateix codi en 2s
+
+cooldownSlider.addEventListener('input', ()=>{
+  cooldownMs = parseInt(cooldownSlider.value,10) || 1500;
+  cooldownVal.textContent = cooldownMs;
+});
 
 function toCSVFromSheet(viewUrl){
   if(!viewUrl) return null;
@@ -174,9 +201,7 @@ async function loadCSVByUrl(url){
   try{
     errorBox.classList.add('hidden'); errorBox.textContent='';
     const res = await fetch(url, {cache:'no-store'});
-    if(!res.ok){
-      throw new Error('HTTP '+res.status+' '+res.statusText);
-    }
+    if(!res.ok){ throw new Error('HTTP '+res.status+' '+res.statusText); }
     const text = await res.text();
     parseCSV(text);
 
@@ -249,9 +274,7 @@ loadSheetBtn.addEventListener('click', async ()=>{
   lastCsvUrl = csvUrl;
   computedUrl.textContent = 'CSV: '+csvUrl;
   testCsvLink.href = csvUrl;
-  try{
-    await loadCSVByUrl(csvUrl);
-  }catch(e){ console.error(e); }
+  try{ await loadCSVByUrl(csvUrl); }catch(e){ console.error(e); }
 });
 refreshBtn.addEventListener('click', async ()=>{
   if(!lastCsvUrl){ alert('Carrega abans un full.'); return; }
@@ -259,9 +282,7 @@ refreshBtn.addEventListener('click', async ()=>{
     await loadCSVByUrl(lastCsvUrl);
     summary.className='status ok';
     summary.textContent='Dades refrescades des del full.';
-  }catch(e){
-    console.error(e);
-  }
+  }catch(e){ console.error(e); }
 });
 
 async function startCamera(){
@@ -283,7 +304,15 @@ stopBtn.addEventListener('click', stopCamera);
 
 async function scanLoop(){
   if(!video.videoWidth){ loopId=requestAnimationFrame(scanLoop); return; }
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+
+  // NO llegir si estem encara en cooldown
+  if (Date.now() < blockUntil) {
+    loopId = requestAnimationFrame(scanLoop);
+    return;
+  }
+
+  canvas.width = video.videoWidth; 
+  canvas.height = video.videoHeight;
   ctx.drawImage(video,0,0,canvas.width,canvas.height);
   let code=null;
   if(('BarcodeDetector' in window) && detector){
@@ -303,16 +332,29 @@ manualCode.addEventListener('keydown', e=>{
 function handleCode(codeRaw){
   const code = String(codeRaw||'').trim();
   if(!code) return;
+
+  // Antirepeat: si aquest codi s’ha vist fa menys de dedupeMs, l’ignorem
+  const nowTs = Date.now();
+  const lastTs = lastSeenAt.get(code) || 0;
+  if (nowTs - lastTs < dedupeMs) {
+    return; // ignorem sense soroll
+  }
+  lastSeenAt.set(code, nowTs);
+
   const rec = validMap.get(code);
   const now = new Date();
   if(!rec){
     scanStatus.className='status err'; scanStatus.textContent='No trobat · '+code;
     addRecent(now, code, {Nom:'',Email:''}, 'bad');
+    blockUntil = Date.now() + cooldownMs;
+    if (navigator.vibrate) navigator.vibrate(60);
     return;
   }
   if(rec.checked){
     scanStatus.className='status warn'; scanStatus.textContent='Ja validat (aquesta sessió) · '+code;
     addRecent(now, code, rec.row, 'dup');
+    blockUntil = Date.now() + cooldownMs;
+    if (navigator.vibrate) navigator.vibrate(60);
     return;
   }
   // Enviar al Google Form en segon pla (si està configurat)
@@ -325,6 +367,10 @@ function handleCode(codeRaw){
   countOk.textContent = String(Number(countOk.textContent||'0') + 1);
   scanStatus.className='status ok'; scanStatus.textContent='VALIDAT · '+code;
   addRecent(now, code, rec.row, 'ok');
+
+  // Pausa després de validar
+  blockUntil = Date.now() + cooldownMs;
+  if (navigator.vibrate) navigator.vibrate(80);
 }
 
 function submitToGoogleForm(action, field, code){
