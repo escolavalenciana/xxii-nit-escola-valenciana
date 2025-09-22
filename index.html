@@ -156,7 +156,16 @@
       <div>
         <label>Últims escanejos</label>
         <table class="grid" id="recentTable">
-          <thead><tr><th style="width:90px">Hora</th><th style="width:170px">Codi</th><th>Nom</th><th>Email</th><th style="width:120px">Estat</th></tr></thead>
+          <thead>
+            <tr>
+              <th style="width:90px">Hora</th>
+              <th style="width:170px">Codi</th>
+              <th style="width:90px">Assistents</th>
+              <th>Nom</th>
+              <th>Email</th>
+              <th style="width:120px">Estat</th>
+            </tr>
+          </thead>
           <tbody></tbody>
         </table>
       </div>
@@ -506,17 +515,23 @@ function submitToGoogleForm(action, field, code){
 }
 
 function addRecent(date, code, row, kind){
-  const tr=document.createElement('tr');
+  const tr = document.createElement('tr');
   const name = row?.Nom || row?.nom || row?.FirstName || row?.first_name || '';
   const email = row?.Email || row?.email || '';
-  tr.innerHTML = `<td>${date.toLocaleTimeString()}</td>
-                  <td>${escapeHtml(code)}</td>
-                  <td>${escapeHtml(name)}</td>
-                  <td>${escapeHtml(email)}</td>
-                  <td>${statusPill(kind)}</td>`;
+  const assist = getAssistents(row); // NOVA columna
+  tr.innerHTML = `
+    <td>${date.toLocaleTimeString()}</td>
+    <td>${escapeHtml(code)}</td>
+    <td>${escapeHtml(assist)}</td>
+    <td>${escapeHtml(name)}</td>
+    <td>${escapeHtml(email)}</td>
+    <td>${statusPill(kind)}</td>`;
   recentTable.prepend(tr);
-  while(recentTable.children.length>20){ recentTable.removeChild(recentTable.lastChild); }
+  while (recentTable.children.length > 20) {
+    recentTable.removeChild(recentTable.lastChild);
+  }
 }
+
 function statusPill(kind){
   if(kind==='ok') return '<span class="pill pill-ok">OK</span>';
   if(kind==='dup') return '<span class="pill pill-dup">DUP</span>';
@@ -526,6 +541,19 @@ function statusPill(kind){
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m]);
 }
+function getAssistents(row){
+  const aliases = ['Assistents','assistents','Asistentes','attendees','Attendees','Nombre d\'assistents','n_assistents'];
+  for(const k of aliases){
+    if (row && Object.prototype.hasOwnProperty.call(row, k)) {
+      const v = String(row[k] ?? '').trim();
+      if (v === '') return '';
+      const n = parseInt(v, 10);
+      return Number.isFinite(n) ? String(n) : v; // si no és enter, mostra tal qual
+    }
+  }
+  return '';
+}
+  
 </script>
 </body>
 </html>
