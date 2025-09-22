@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Validació QR — La Nit (Sheets + Form · cooldown)</title>
+<title>Validació QR — La Nit (Sheets + Form + Respostes · persistent)</title>
 <style>
   :root{ --ok:#10b981; --warn:#f59e0b; --err:#ef4444; --ink:#0f172a; --muted:#6b7280; --bg:#ffffff; }
   *{box-sizing:border-box;}
@@ -11,12 +11,14 @@
        margin:0; background:var(--bg); color:var(--ink);}
   header{padding:16px 20px; border-bottom:1px solid #e5e7eb; display:flex; gap:16px; align-items:center; flex-wrap:wrap;}
   header h1{font-size:18px; margin:0; font-weight:700;}
-  main{max-width:760px; margin:0 auto; padding:16px;}
+  main{max-width:880px; margin:0 auto; padding:16px;}
   .panel{border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:16px;}
   .row{display:flex; gap:16px; flex-wrap:wrap;}
-  .row > *{flex:1 1 320px; min-width:0;}
+  .row > *{flex:1 1 360px; min-width:0;}
   label{font-weight:600; font-size:14px; display:block; margin-bottom:6px;}
-  input[type="text"], input[type="range"], select, button, a.button{width:100%; max-width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px;}
+  input[type="text"], input[type="range"], select, button, a.button{
+    width:100%; max-width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px;
+  }
   input[type="range"]{padding:8px 0; border:none;}
   button, a.button{background:#000; color:#ff0; font-weight:700; border:none; cursor:pointer; transition:.2s; text-align:center; text-decoration:none; display:inline-block;}
   button:hover, a.button:hover{background:#ff0; color:#000;}
@@ -29,6 +31,7 @@
   .grid th,.grid td{border-bottom:1px solid #e5e7eb; padding:8px 10px; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700;}
   .pill-ok{background:#d1fae5; color:#065f46;} .pill-dup{background:#fee2e2; color:#991b1b;}
+  .pill-full{background:#fde68a; color:#92400e;}
   .controls{display:flex; gap:10px; flex-wrap:wrap;}
   #video{width:100%; border-radius:12px; background:#111; aspect-ratio:16/9; object-fit:cover;}
   .muted{color:var(--muted);} .small{font-size:12px;}
@@ -44,27 +47,30 @@
 <body>
 <header>
   <h1>Validació QR — La Nit</h1>
-  <div class="muted small">Enllaça el Google Sheets (vista) · Columna: <strong>ID</strong> · Registre via Google Forms</div>
+  <div class="muted small">Sheets (inscripcions) + Form + Respostes · Columna <strong>ID</strong> · Persistència entre sessions</div>
 </header>
 <main>
 
   <div class="panel">
     <div class="row">
       <div>
-        <label>URL del Google Sheets (vista, compartit amb “Qualsevol amb l’enllaç”)</label>
+        <label>URL del Google Sheets d’inscripcions (vista, “Qualsevol amb l’enllaç”)</label>
         <input type="text" id="sheetUrl" placeholder="Ex.: https://docs.google.com/spreadsheets/d/ID/edit?usp=sharing">
         <div class="controls" style="margin-top:8px;">
           <button id="loadSheetBtn">Carrega</button>
           <button id="refreshBtn" disabled>Actualitza</button>
           <a id="testCsvLink" class="button" href="#" target="_blank" rel="noopener">Prova CSV</a>
         </div>
-        <div class="hint">Si el full té diverses pestanyes, afegeix <code>&gid=...</code> a l'URL per a eixa pestanya.</div>
+        <div class="hint">Si el full té diverses pestanyes, afegeix <code>?gid=...</code> o <code>#gid=...</code> a l'URL.</div>
         <div id="errorBox" class="errorBox hidden"></div>
       </div>
       <div>
-        <label>Resum</label>
+        <label>Resum inscripcions</label>
         <div id="summary" class="status warn">Esperant URL…</div>
-        <div class="hint"><span class="count" id="countOk">0</span> validats (sessió) · <span class="count" id="countTotal">0</span> totals</div>
+        <div class="hint">
+          <span class="count" id="countOk">0</span> validats (sessió) ·
+          <span class="count" id="countTotal">0</span> totals
+        </div>
       </div>
     </div>
 
@@ -81,24 +87,49 @@
 
     <div class="row" style="margin-top:12px;">
       <div>
+        <label>URL del full de respostes del Form (vista, “Qualsevol amb l’enllaç”)</label>
+        <input type="text" id="answersUrl" placeholder="Ex.: https://docs.google.com/spreadsheets/d/ID/edit?usp=sharing">
+        <div class="controls" style="margin-top:8px;">
+          <button id="loadAnswersBtn">Carrega respostes</button>
+          <button id="refreshAnswersBtn" disabled>Actualitza respostes</button>
+          <a id="testAnswersCsvLink" class="button" href="#" target="_blank" rel="noopener">Prova CSV respostes</a>
+        </div>
+        <div class="hint">Este és el full on el Google Form guarda els check-ins.</div>
+      </div>
+      <div>
+        <label>Resum respostes (persistència)</label>
+        <div id="answersSummary" class="status warn">Sense dades de respostes…</div>
+        <div class="hint">
+          <span class="count" id="answersCount">0</span> codis amb check-in (full de respostes)
+        </div>
+      </div>
+    </div>
+
+    <div id="fallbacks" class="row hidden" style="margin-top:12px;">
+      <div>
+        <label>Columna de codi a inscripcions</label>
+        <select id="codeColumn"></select>
+      </div>
+      <div>
+        <label>Columna de codi a respostes</label>
+        <select id="answersCodeColumn"></select>
+      </div>
+      <div class="hint" style="flex-basis:100%;">Aquest selector només apareix si no es detecta automàticament la columna <strong>ID</strong> als CSV.</div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div>
         <label>Cooldown entre lectures (ms)</label>
         <div class="inline">
           <input type="range" id="cooldownSlider" min="500" max="4000" step="100" value="1500" />
           <span class="val" id="cooldownVal">1500</span>
         </div>
-        <div class="hint">Pausa mínima entre lectures (ex.: 1500ms = 1.5s). També s’ignoren relectures del mateix codi durant 2s.</div>
-      </div>
-    </div>
-
-    <div id="fallbackSelector" class="row hidden" style="margin-top:12px;">
-      <div>
-        <label>Columna de codi (fallback)</label>
-        <select id="codeColumn"></select>
-        <div class="hint">Només apareix si no es detecta la columna <strong>ID</strong>.</div>
+        <div class="hint">Pausa mínima entre lectures (p.ex. 1500ms = 1.5s). S’ignoren relectures del mateix codi durant 2s.</div>
       </div>
     </div>
 
     <div class="hint mono" id="computedUrl"></div>
+    <div class="hint mono" id="computedAnswersUrl"></div>
   </div>
 
   <div class="panel">
@@ -125,7 +156,7 @@
       <div>
         <label>Últims escanejos</label>
         <table class="grid" id="recentTable">
-          <thead><tr><th style="width:90px">Hora</th><th style="width:170px">Codi</th><th>Nom</th><th>Email</th><th style="width:70px">Estat</th></tr></thead>
+          <thead><tr><th style="width:90px">Hora</th><th style="width:170px">Codi</th><th>Nom</th><th>Email</th><th style="width:120px">Estat</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -146,41 +177,58 @@ if (BarcodeReady) {
 }
 
 let rows = [], header = [], codeKey = 'ID';
+let answersRows = [], answersHeader = [], answersCodeKey = 'ID';
 const validMap = new Map();
+const validatedSet = new Set(); // IDs ja registrats al full de respostes (persistents)
+
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 let stream = null, loopId = null;
 
 const summary = document.getElementById('summary');
+const answersSummary = document.getElementById('answersSummary');
 const scanStatus = document.getElementById('scanStatus');
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const manualCode = document.getElementById('manualCode');
 const recentTable = document.querySelector('#recentTable tbody');
+
 const loadSheetBtn = document.getElementById('loadSheetBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const sheetUrlInput = document.getElementById('sheetUrl');
-const fallbackSelector = document.getElementById('fallbackSelector');
+
+const loadAnswersBtn = document.getElementById('loadAnswersBtn');
+const refreshAnswersBtn = document.getElementById('refreshAnswersBtn');
+const answersUrlInput = document.getElementById('answersUrl');
+
+const fallbacks = document.getElementById('fallbacks');
 const codeColumn = document.getElementById('codeColumn');
+const answersCodeColumn = document.getElementById('answersCodeColumn');
+
 const countOk = document.getElementById('countOk');
 const countTotal = document.getElementById('countTotal');
 const testCsvLink = document.getElementById('testCsvLink');
+const testAnswersCsvLink = document.getElementById('testAnswersCsvLink');
 const errorBox = document.getElementById('errorBox');
 const computedUrl = document.getElementById('computedUrl');
+const computedAnswersUrl = document.getElementById('computedAnswersUrl');
 const formActionInput = document.getElementById('formAction');
 const formFieldInput = document.getElementById('formField');
 const hiddenForm = document.getElementById('hiddenForm');
+const answersCount = document.getElementById('answersCount');
+
 const cooldownSlider = document.getElementById('cooldownSlider');
 const cooldownVal = document.getElementById('cooldownVal');
 
 let lastCsvUrl = null;
+let lastAnswersCsvUrl = null;
 
 // Anti-spam / cooldown
-let blockUntil = 0;              // temps UNIX fins al qual “pares” la lectura
-let cooldownMs = parseInt(cooldownSlider.value, 10) || 1500; // pausa global entre lectures
-const lastSeenAt = new Map();    // codi -> timestamp última vegada vist
-const dedupeMs = 2000;           // no tornar a processar el mateix codi en 2s
+let blockUntil = 0;
+let cooldownMs = parseInt(cooldownSlider.value, 10) || 1500;
+const lastSeenAt = new Map();
+const dedupeMs = 2000;
 
 cooldownSlider.addEventListener('input', ()=>{
   cooldownMs = parseInt(cooldownSlider.value,10) || 1500;
@@ -192,37 +240,38 @@ function toCSVFromSheet(viewUrl){
   const m = viewUrl.match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^\/]+)(?:\/.*)?$/);
   if(!m) return null;
   const id = m[1];
-  const gidMatch = viewUrl.match(/[?&]gid=(\d+)/);
+  const gidMatch = viewUrl.match(/[?&]gid=(\d+)/) || viewUrl.match(/[#]gid=(\d+)/);
   const gid = gidMatch ? gidMatch[1] : '0';
   return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
 }
 
-async function loadCSVByUrl(url){
+async function loadCSVByUrl(url, type){
+  const isAnswers = (type === 'answers');
   try{
-    errorBox.classList.add('hidden'); errorBox.textContent='';
     const res = await fetch(url, {cache:'no-store'});
     if(!res.ok){ throw new Error('HTTP '+res.status+' '+res.statusText); }
     const text = await res.text();
-    parseCSV(text);
-
-    const hasID = header.some(h => h.trim().toLowerCase() === 'id');
-    if(hasID){
-      codeKey = header.find(h => h.trim().toLowerCase() === 'id');
-      fallbackSelector.classList.add('hidden');
+    if(isAnswers){
+      parseAnswersCSV(text);
+      buildAnswersSet();
+      updateAnswersSummary();
+      refreshAnswersBtn.disabled = false;
     }else{
-      fallbackSelector.classList.remove('hidden');
-      codeColumn.innerHTML = '';
-      header.forEach(h=>{ const opt=document.createElement('option'); opt.value=h; opt.textContent=h; codeColumn.appendChild(opt); });
-      codeColumn.onchange = ()=>{ codeKey = codeColumn.value; buildMap(); updateSummary(); };
-      codeKey = header[0];
+      parseCSV(text);
+      buildMap();
+      updateSummary();
+      startBtn.disabled = false; refreshBtn.disabled = false;
     }
-
-    buildMap(); updateSummary();
-    startBtn.disabled = false; refreshBtn.disabled = false;
   }catch(e){
-    errorBox.textContent = 'No s’ha pogut carregar el CSV: '+(e && e.message ? e.message : e);
-    errorBox.classList.remove('hidden');
-    throw e;
+    const targetBox = isAnswers ? answersSummary : errorBox;
+    if(isAnswers){
+      answersSummary.className = 'status err';
+      answersSummary.textContent = 'No s’ha pogut carregar el CSV de respostes: ' + (e && e.message ? e.message : e);
+    }else{
+      errorBox.textContent = 'No s’ha pogut carregar el CSV: ' + (e && e.message ? e.message : e);
+      errorBox.classList.remove('hidden');
+    }
+    console.error(e);
   }
 }
 
@@ -237,7 +286,46 @@ function parseCSV(text){
     for(let j=0;j<header.length;j++){ obj[header[j]] = (vals[j] ?? '').trim(); }
     rows.push(obj);
   }
+  // Detecta columna ID o mostra fallback
+  const hasID = header.some(h => h.trim().toLowerCase() === 'id');
+  if(hasID){
+    codeKey = header.find(h => h.trim().toLowerCase() === 'id');
+  }else{
+    fillFallbacks();
+    codeKey = header[0];
+  }
 }
+function parseAnswersCSV(text){
+  answersRows = []; answersHeader = [];
+  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.trim().length>0);
+  if(!lines.length) return;
+  answersHeader = splitCSVLine(lines[0]);
+  for(let i=1;i<lines.length;i++){
+    const vals = splitCSVLine(lines[i]);
+    const obj = {};
+    for(let j=0;j<answersHeader.length;j++){ obj[answersHeader[j]] = (vals[j] ?? '').trim(); }
+    answersRows.push(obj);
+  }
+  const hasID = answersHeader.some(h => h.trim().toLowerCase() === 'id');
+  if(hasID){
+    answersCodeKey = answersHeader.find(h => h.trim().toLowerCase() === 'id');
+  }else{
+    fillFallbacks();
+    answersCodeKey = answersHeader[0];
+  }
+}
+function fillFallbacks(){
+  fallbacks.classList.remove('hidden');
+  // inscripcions
+  codeColumn.innerHTML = '';
+  header.forEach(h=>{ const opt=document.createElement('option'); opt.value=h; opt.textContent=h; codeColumn.appendChild(opt); });
+  codeColumn.onchange = ()=>{ codeKey = codeColumn.value; buildMap(); updateSummary(); };
+  // respostes
+  answersCodeColumn.innerHTML = '';
+  answersHeader.forEach(h=>{ const opt=document.createElement('option'); opt.value=h; opt.textContent=h; answersCodeColumn.appendChild(opt); });
+  answersCodeColumn.onchange = ()=>{ answersCodeKey = answersCodeColumn.value; buildAnswersSet(); updateAnswersSummary(); };
+}
+
 function splitCSVLine(line){
   const out = []; let cur=''; let inQ=false;
   for(let i=0;i<line.length;i++){
@@ -248,6 +336,7 @@ function splitCSVLine(line){
   }
   out.push(cur); return out;
 }
+
 function buildMap(){
   validMap.clear();
   let ok=0;
@@ -261,28 +350,58 @@ function buildMap(){
   countOk.textContent = ok;
   countTotal.textContent = validMap.size;
 }
+function buildAnswersSet(){
+  validatedSet.clear();
+  for(const r of answersRows){
+    const code = (r[answersCodeKey] || '').trim();
+    if(!code) continue;
+    validatedSet.add(code);
+  }
+}
 function updateSummary(){
   summary.className='status ok';
   summary.textContent = `Càrrega correcta · ${validMap.size} codis · Columna ID: ${codeKey}`;
 }
+function updateAnswersSummary(){
+  answersSummary.className='status ok';
+  answersSummary.textContent = `Respostes carregades · ${validatedSet.size} codis amb check-in · Columna ID: ${answersCodeKey}`;
+  answersCount.textContent = validatedSet.size;
+}
 
 loadSheetBtn.addEventListener('click', async ()=>{
   const v = sheetUrlInput.value.trim();
-  if(!v){ alert('Posa l’enllaç de visualització del Google Sheets.'); return; }
+  if(!v){ alert('Posa l’enllaç de visualització del Google Sheets d’inscripcions.'); return; }
   const csvUrl = toCSVFromSheet(v);
   if(!csvUrl){ alert('Enllaç de Google Sheets no vàlid.'); return; }
   lastCsvUrl = csvUrl;
-  computedUrl.textContent = 'CSV: '+csvUrl;
+  computedUrl.textContent = 'CSV inscripcions: '+csvUrl;
   testCsvLink.href = csvUrl;
-  try{ await loadCSVByUrl(csvUrl); }catch(e){ console.error(e); }
+  await loadCSVByUrl(csvUrl, 'inscripcions');
 });
+
 refreshBtn.addEventListener('click', async ()=>{
-  if(!lastCsvUrl){ alert('Carrega abans un full.'); return; }
-  try{
-    await loadCSVByUrl(lastCsvUrl);
-    summary.className='status ok';
-    summary.textContent='Dades refrescades des del full.';
-  }catch(e){ console.error(e); }
+  if(!lastCsvUrl){ alert('Carrega abans el full d’inscripcions.'); return; }
+  await loadCSVByUrl(lastCsvUrl, 'inscripcions');
+  summary.className='status ok';
+  summary.textContent='Dades d’inscripcions refrescades.';
+});
+
+loadAnswersBtn.addEventListener('click', async ()=>{
+  const v = answersUrlInput.value.trim();
+  if(!v){ alert('Posa l’enllaç de visualització del full de respostes.'); return; }
+  const csvUrl = toCSVFromSheet(v);
+  if(!csvUrl){ alert('Enllaç de Google Sheets no vàlid.'); return; }
+  lastAnswersCsvUrl = csvUrl;
+  computedAnswersUrl.textContent = 'CSV respostes: '+csvUrl;
+  testAnswersCsvLink.href = csvUrl;
+  await loadCSVByUrl(csvUrl, 'answers');
+});
+
+refreshAnswersBtn.addEventListener('click', async ()=>{
+  if(!lastAnswersCsvUrl){ alert('Carrega abans el full de respostes.'); return; }
+  await loadCSVByUrl(lastAnswersCsvUrl, 'answers');
+  answersSummary.className='status ok';
+  answersSummary.textContent='Dades de respostes refrescades.';
 });
 
 async function startCamera(){
@@ -304,14 +423,9 @@ stopBtn.addEventListener('click', stopCamera);
 
 async function scanLoop(){
   if(!video.videoWidth){ loopId=requestAnimationFrame(scanLoop); return; }
+  if (Date.now() < blockUntil) { loopId = requestAnimationFrame(scanLoop); return; }
 
-  // NO llegir si estem encara en cooldown
-  if (Date.now() < blockUntil) {
-    loopId = requestAnimationFrame(scanLoop);
-    return;
-  }
-
-  canvas.width = video.videoWidth; 
+  canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   ctx.drawImage(video,0,0,canvas.width,canvas.height);
   let code=null;
@@ -324,7 +438,6 @@ async function scanLoop(){
   if(code){ handleCode(code); }
   loopId = requestAnimationFrame(scanLoop);
 }
-
 manualCode.addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); handleCode(manualCode.value); manualCode.select(); }
 });
@@ -333,16 +446,15 @@ function handleCode(codeRaw){
   const code = String(codeRaw||'').trim();
   if(!code) return;
 
-  // Antirepeat: si aquest codi s’ha vist fa menys de dedupeMs, l’ignorem
   const nowTs = Date.now();
   const lastTs = lastSeenAt.get(code) || 0;
-  if (nowTs - lastTs < dedupeMs) {
-    return; // ignorem sense soroll
-  }
+  if (nowTs - lastTs < dedupeMs) { return; }
   lastSeenAt.set(code, nowTs);
 
-  const rec = validMap.get(code);
   const now = new Date();
+  const rec = validMap.get(code);
+
+  // 1) No trobat al full d’inscripcions
   if(!rec){
     scanStatus.className='status err'; scanStatus.textContent='No trobat · '+code;
     addRecent(now, code, {Nom:'',Email:''}, 'bad');
@@ -350,25 +462,36 @@ function handleCode(codeRaw){
     if (navigator.vibrate) navigator.vibrate(60);
     return;
   }
+
+  // 2) Ja validat segons FULL DE RESPOSTES (persistència)
+  if(validatedSet.has(code)){
+    scanStatus.className='status warn'; scanStatus.textContent='Ja validat · '+code;
+    addRecent(now, code, rec.row, 'full');
+    blockUntil = Date.now() + cooldownMs;
+    if (navigator.vibrate) navigator.vibrate(60);
+    return;
+  }
+
+  // 3) Ja validat en aquesta sessió
   if(rec.checked){
-    scanStatus.className='status warn'; scanStatus.textContent='Ja validat (aquesta sessió) · '+code;
+    scanStatus.className='status warn'; scanStatus.textContent='Ja validat · '+code;
     addRecent(now, code, rec.row, 'dup');
     blockUntil = Date.now() + cooldownMs;
     if (navigator.vibrate) navigator.vibrate(60);
     return;
   }
-  // Enviar al Google Form en segon pla (si està configurat)
+
+  // 4) VALIDAR: enviar al Google Form (si està configurat) i marcar sessió
   const action = formActionInput.value.trim();
   const field = formFieldInput.value.trim();
-  if(action && field){
-    submitToGoogleForm(action, field, code);
-  }
+  if(action && field){ submitToGoogleForm(action, field, code); }
+
   rec.checked = true;
   countOk.textContent = String(Number(countOk.textContent||'0') + 1);
   scanStatus.className='status ok'; scanStatus.textContent='VALIDAT · '+code;
   addRecent(now, code, rec.row, 'ok');
 
-  // Pausa després de validar
+  // Pausa
   blockUntil = Date.now() + cooldownMs;
   if (navigator.vibrate) navigator.vibrate(80);
 }
@@ -379,7 +502,6 @@ function submitToGoogleForm(action, field, code){
   const input = document.createElement('input');
   input.type = 'hidden'; input.name = field; input.value = code;
   hiddenForm.appendChild(input);
-  // Evita canviar de pàgina: target=hiddenFrame
   hiddenForm.submit();
 }
 
@@ -387,20 +509,22 @@ function addRecent(date, code, row, kind){
   const tr=document.createElement('tr');
   const name = row?.Nom || row?.nom || row?.FirstName || row?.first_name || '';
   const email = row?.Email || row?.email || '';
-  tr.innerHTML = `<td>${date.toLocaleTimeString()}</td><td>${escapeHtml(code)}</td>
-                  <td>${escapeHtml(name)}</td><td>${escapeHtml(email)}</td><td>${statusPill(kind)}</td>`;
+  tr.innerHTML = `<td>${date.toLocaleTimeString()}</td>
+                  <td>${escapeHtml(code)}</td>
+                  <td>${escapeHtml(name)}</td>
+                  <td>${escapeHtml(email)}</td>
+                  <td>${statusPill(kind)}</td>`;
   recentTable.prepend(tr);
   while(recentTable.children.length>20){ recentTable.removeChild(recentTable.lastChild); }
 }
 function statusPill(kind){
   if(kind==='ok') return '<span class="pill pill-ok">OK</span>';
   if(kind==='dup') return '<span class="pill pill-dup">DUP</span>';
+  if(kind==='full') return '<span class="pill pill-full">FULL</span>';
   return '<span class="pill" style="background:#fee2e2;color:#991b1b;">N/D</span>';
 }
 function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g, function(m){
-    return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m];
-  });
+  return String(s||'').replace(/[&<>"']/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m]);
 }
 </script>
 </body>
