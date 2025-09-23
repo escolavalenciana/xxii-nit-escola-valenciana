@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XXII Nit d'Escola Valenciana</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Arial, sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      text-align: center;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+      color: #333;
+    }
+    .buttons {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    a.button {
+      display: inline-block;
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-decoration: none;
+      color: white;
+      border-radius: 12px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    a.acte {
+      background: #0072ce;
+    }
+    a.acte:hover {
+      background: #005a9e;
+      transform: scale(1.05);
+    }
+    a.sopar {
+      background: #e63946;
+    }
+    a.sopar:hover {
+      background: #b71c1c;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>XXII Nit d'Escola Valenciana</h1>
+    <div class="buttons">
+      <a href="./ACTE/" class="button acte">Acte</a>
+      <a href="./SOPAR/" class="button sopar">Sopar</a>
+    </div>
+  </div>
+</body>
+</html>
