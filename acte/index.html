@@ -156,16 +156,14 @@
       <div>
         <label>Últims escanejos</label>
         <table class="grid" id="recentTable">
-          <thead>
-            <tr>
-              <th style="width:90px">Hora</th>
-              <th style="width:170px">Codi</th>
-              <th style="width:90px">Assistents</th>
-              <th>Nom</th>
-              <th>Email</th>
-              <th style="width:120px">Estat</th>
-            </tr>
-          </thead>
+<thead>
+  <tr>
+    <th style="width:90px">Hora</th>
+    <th style="width:90px">Assistents</th>
+    <th>Nom</th>
+    <th style="width:120px">Estat</th>
+  </tr>
+</thead>
           <tbody></tbody>
         </table>
       </div>
@@ -517,14 +515,11 @@ function submitToGoogleForm(action, field, code){
 function addRecent(date, code, row, kind){
   const tr = document.createElement('tr');
   const name = row?.Nom || row?.nom || row?.FirstName || row?.first_name || '';
-  const email = row?.Email || row?.email || '';
-  const assist = getAssistents(row); // NOVA columna
+  const assist = getAssistents(row);
   tr.innerHTML = `
     <td>${date.toLocaleTimeString()}</td>
-    <td>${escapeHtml(code)}</td>
     <td>${escapeHtml(assist)}</td>
     <td>${escapeHtml(name)}</td>
-    <td>${escapeHtml(email)}</td>
     <td>${statusPill(kind)}</td>`;
   recentTable.prepend(tr);
   while (recentTable.children.length > 20) {
