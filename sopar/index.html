@@ -1,559 +1,1682 @@
-<!DOCTYPE html>
-<html lang="ca">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VAL. QR SOPAR — XXII Nit d'Escola Valenciana</title>
-<style>
-  :root{ --ok:#10b981; --warn:#f59e0b; --err:#ef4444; --ink:#0f172a; --muted:#6b7280; --bg:#ffffff; }
-  *{box-sizing:border-box;}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-       margin:0; background:var(--bg); color:var(--ink);}
-  header{padding:16px 20px; border-bottom:1px solid #e5e7eb; display:flex; gap:16px; align-items:center; flex-wrap:wrap;}
-  header h1{font-size:18px; margin:0; font-weight:700;}
-  main{max-width:880px; margin:0 auto; padding:16px;}
-  .panel{border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:16px;}
-  .row{display:flex; gap:16px; flex-wrap:wrap;}
-  .row > *{flex:1 1 360px; min-width:0;}
-  label{font-weight:600; font-size:14px; display:block; margin-bottom:6px;}
-  input[type="text"], input[type="range"], select, button, a.button{
-    width:100%; max-width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px;
+<html lang='ca_ES'>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+		<!-- css -->
+					<link rel="stylesheet" type="text/css" media="all" href="https://escolavalenciana.sinergiacrm.org/cache/themes/SuiteP/css/Stic/style.css?v=NNrQfJ7NEJ6RQHVUP2yHWw">
+		
+		
+			<style>
+				body { background:transparent; padding:0; font-family: Helvetica, sans-serif, Verdana, Arial; }
+				h3 {font-size: 1.2em}
+				input, textarea, select {width: 200px;}
+				.document{width: 300px;}
+				.tableForm {width: 100%; text-align: left; padding: 10px 6px 12px 10px;}
+				.tableForm tr td {padding: 0px 0px 15px 0px;}
+				.column_25 {width: 25%;}
+				.required {color: rgb(255, 0, 0);}
+				.current-required-field {background-color: yellow;}
+				.error_zone {color: red; font-weight: bold; line-height: 30px;}
+				.datetimecombo_time_section { display: inline-block; }
+				.datetimecombo_time_section select { max-width: 60px; padding-right: 2px; }
+				
+				/* ===== Layout responsive 2 columnes / 1 columna ===== */
+.tableForm { width: 100%; }
+.tableForm .section { display: block; }
+.tableForm .section::after { content: ""; display: block; clear: both; }
+
+/* Cada camp (cada <tr>) com a targeta/ítem */
+.tableForm .section > tr {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 22px 0;
+}
+
+/* Dues columnes en pantalles mitjanes/grans */
+@media (min-width: 820px) {
+  .tableForm .section > tr {
+    float: left;
+    width: 48%;
+    padding-right: 2%;
   }
-  input[type="range"]{padding:8px 0; border:none;}
-  button, a.button{background:#000; color:#ff0; font-weight:700; border:none; cursor:pointer; transition:.2s; text-align:center; text-decoration:none; display:inline-block;}
-  button:hover, a.button:hover{background:#ff0; color:#000;}
-  .hint{color:var(--muted); font-size:12px; margin-top:6px;}
-  .status{border-radius:12px; padding:12px 14px; font-weight:700; display:flex; align-items:center; gap:10px; min-height:42px;}
-  .ok{background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;}
-  .err{background:#fef2f2; color:#991b1b; border:1px solid #fecaca;}
-  .warn{background:#fffbeb; color:#92400e; border:1px solid #fde68a;}
-  .grid{width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed;}
-  .grid th,.grid td{border-bottom:1px solid #e5e7eb; padding:8px 10px; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700;}
-  .pill-ok{background:#d1fae5; color:#065f46;} .pill-dup{background:#fee2e2; color:#991b1b;}
-  .pill-full{background:#fde68a; color:#92400e;}
-  .controls{display:flex; gap:10px; flex-wrap:wrap;}
-  #video{width:100%; border-radius:12px; background:#111; aspect-ratio:16/9; object-fit:cover;}
-  .muted{color:var(--muted);} .small{font-size:12px;}
-  .hidden{display:none !important;}
-  .count{font-weight:700;}
-  .errorBox{border:1px solid #fecaca; background:#fef2f2; color:#991b1b; border-radius:12px; padding:10px; font-size:13px; margin-top:10px;}
-  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
-  iframe{display:none;}
-  .inline{display:flex; align-items:center; gap:10px;}
-  .inline .val{min-width:3ch; text-align:right; font-variant-numeric: tabular-nums;}
-</style>
-</head>
-<body>
-<header>
-  <h1>Validació QR Sopar — XXII Nit d'Escola Valenciana</h1>
-  <div class="muted small">Sheets (inscripcions) + Form + Respostes · Columna <strong>ID</strong> · Persistència entre sessions</div>
-</header>
-<main>
+  .tableForm .section > tr:nth-child(2n+1) { clear: left; }
+}
 
-  <div class="panel">
-    <div class="row">
-      <div>
-        <label>URL del Google Sheets d’inscripcions (vista, “Qualsevol amb l’enllaç”)</label>
-        <input type="text" id="sheetUrl" placeholder="Ex.: https://docs.google.com/spreadsheets/d/ID/edit?usp=sharing">
-        <div class="controls" style="margin-top:8px;">
-          <button id="loadSheetBtn">Carrega</button>
-          <button id="refreshBtn" disabled>Actualitza</button>
-          <a id="testCsvLink" class="button" href="#" target="_blank" rel="noopener">Prova CSV</a>
-        </div>
-        <div class="hint">Si el full té diverses pestanyes, afegeix <code>?gid=...</code> o <code>#gid=...</code> a l'URL.</div>
-        <div id="errorBox" class="errorBox hidden"></div>
-      </div>
-      <div>
-        <label>Resum inscripcions</label>
-        <div id="summary" class="status warn">Esperant URL…</div>
-        <div class="hint">
-          <span class="count" id="countOk">0</span> validats (sessió) ·
-          <span class="count" id="countTotal">0</span> totals
-        </div>
-      </div>
-    </div>
+/* Força les cel·les a apilar-se (label a dalt, camp baix) */
+.tableForm tr td { 
+  display: block; 
+  width: 100% !important; 
+  padding: 0 0 4px 0 !important;
+  border: 0 !important;
+}
 
-    <div class="row" style="margin-top:12px;">
-      <div>
-        <label>URL del Google Form (acaba en <code>/formResponse</code>)</label>
-        <input type="text" id="formAction" placeholder="Ex.: https://docs.google.com/forms/d/e/FORM_ID/formResponse">
-      </div>
-      <div>
-        <label>Nom del camp del Form (tipus <code>entry.XXXXXXXXX</code>)</label>
-        <input type="text" id="formField" placeholder="Ex.: entry.1234567890 (camp per a l'ID)">
-      </div>
-    </div>
+/* Amplària completa dels camps (override del width:200px original) */
+.tableForm input,
+.tableForm select,
+.tableForm textarea {
+  width: 100% !important;
+  box-sizing: border-box;
+}
 
-    <div class="row" style="margin-top:12px;">
-      <div>
-        <label>URL del full de respostes del Form (vista, “Qualsevol amb l’enllaç”)</label>
-        <input type="text" id="answersUrl" placeholder="Ex.: https://docs.google.com/spreadsheets/d/ID/edit?usp=sharing">
-        <div class="controls" style="margin-top:8px;">
-          <button id="loadAnswersBtn">Carrega respostes</button>
-          <button id="refreshAnswersBtn" disabled>Actualitza respostes</button>
-          <a id="testAnswersCsvLink" class="button" href="#" target="_blank" rel="noopener">Prova CSV respostes</a>
-        </div>
-        <div class="hint">Este és el full on el Google Form guarda els check-ins.</div>
-      </div>
-      <div>
-        <label>Resum respostes (persistència)</label>
-        <div id="answersSummary" class="status warn">Sense dades de respostes…</div>
-        <div class="hint">
-          <span class="count" id="answersCount">0</span> codis amb check-in (full de respostes)
-        </div>
-      </div>
-    </div>
+/* Estil “línia inferior” per a inputs i selects */
+.tableForm input[type="text"],
+.tableForm input[type="email"],
+.tableForm input[type="tel"],
+.tableForm input[type="number"],
+.tableForm .document,
+.tableForm textarea,
+.tableForm select {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid #111;
+  padding: 12px 0 10px 0;
+  outline: none;
+  font-size: 16px;
+}
 
-    <div id="fallbacks" class="row hidden" style="margin-top:12px;">
-      <div>
-        <label>Columna de codi a inscripcions</label>
-        <select id="codeColumn"></select>
-      </div>
-      <div>
-        <label>Columna de codi a respostes</label>
-        <select id="answersCodeColumn"></select>
-      </div>
-      <div class="hint" style="flex-basis:100%;">Aquest selector només apareix si no es detecta automàticament la columna <strong>ID</strong> als CSV.</div>
-    </div>
+/* Focus */
+.tableForm input:focus,
+.tableForm textarea:focus,
+.tableForm select:focus {
+  border-bottom-color: #000;
+}
 
-    <div class="row" style="margin-top:12px;">
-      <div>
-        <label>Cooldown entre lectures (ms)</label>
-        <div class="inline">
-          <input type="range" id="cooldownSlider" min="500" max="4000" step="100" value="1500" />
-          <span class="val" id="cooldownVal">1500</span>
-        </div>
-        <div class="hint">Pausa mínima entre lectures (p.ex. 1500ms = 1.5s). S’ignoren relectures del mateix codi durant 2s.</div>
-      </div>
-    </div>
+/* Label (títol de camp) i asterisc requerit */
+.tableForm td[id^="td_lbl_"] > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.tableForm td[id^="td_lbl_"] label { 
+  font-size: 14px; 
+  color: #444;
+}
+/* Mostra l’asterisc abans del text (com a la imatge) */
+.tableForm td[id^="td_lbl_"] > span .required { order: -1; }
 
-    <div class="hint mono" id="computedUrl"></div>
-    <div class="hint mono" id="computedAnswersUrl"></div>
-  </div>
+/* Select amb fletxa ▼ minimalista */
+.tableForm select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #111 50%),
+    linear-gradient(135deg, #111 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 32px; /* espai per a la fletxa */
+}
 
-  <div class="panel">
-    <div class="row">
-      <div>
-        <label>Escaneig amb càmera</label>
-        <video id="video" playsinline></video>
-        <div class="controls" style="margin-top:10px;">
-          <button id="startBtn" disabled>Inicia càmera</button>
-          <button id="stopBtn" disabled>Para</button>
-        </div>
-        <div class="hint">HTTPS obligatori (GitHub Pages ho és).</div>
-      </div>
-      <div>
-        <label>Entrada manual (rescat)</label>
-        <input type="text" id="manualCode" placeholder="Escriu o enganxa codi i prem Enter">
-        <div class="status warn" id="scanStatus">Esperant…</div>
-      </div>
-    </div>
-  </div>
+/* Fila del “Preu” amb la mateixa línia inferior visual */
+#row_preu_visible .column_25:last-child span {
+  display: block;
+  padding: 12px 0 10px 0;
+  border-bottom: 2px solid #111;
+  font-weight: 600;
+}
 
-  <div class="panel">
-    <div class="row">
-      <div>
-        <label>Últims escanejos</label>
-        <table class="grid" id="recentTable">
-          <thead>
-            <tr>
-              <th style="width:90px">Hora</th>
-              <th style="width:170px">Codi</th>
-              <th style="width:90px">Assistents</th>
-              <th>Nom</th>
-              <th>Email</th>
-              <th style="width:120px">Estat</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+/* Fila del botó: ocupa 100% i baixa sota les columnes */
+.tableForm > tbody:last-of-type > tr {
+  clear: both;
+  float: none;
+  width: 100%;
+  margin-top: 10px;
+}
+.tableForm .button {
+  display: inline-block;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 6px;
+  background: #ffcc00;
+  color: #111;
+  cursor: pointer;
+}
+.tableForm .button:hover,
+.tableForm .button:focus-visible {
+  background: #536780;
+  color: #fff;
+  font-weight: 700;
+  filter: none;
+  transition: background 160ms ease, color 160ms ease;
+}
 
-  <form id="hiddenForm" method="POST" target="hiddenFrame" class="hidden"></form>
-  <iframe name="hiddenFrame"></iframe>
 
-  <canvas id="canvas" style="display:none;"></canvas>
-</main>
+/* Ajustos menuts per a mòbil */
+/* Spacer: ocupa la 2a columna en escriptori, s'oculta en mòbil */
+.tableForm .section > tr.spacer td span { 
+  display:block; padding: 22px 0 20px 0; border-bottom: 2px solid transparent;
+}
+@media (max-width: 819px){
+  .tableForm .section > tr.spacer { display:none; }
+}
+/* Força que una fila comence a la columna esquerra en escriptori */
+@media (min-width:820px){
+  .tableForm .section > tr.pair-start { clear: left !important; }
+}
+@media (min-width:820px){
+  .tableForm .section > tr.fullrow{
+    float:none; width:100%; padding-right:0; clear:both;
+  }
+}
+/* que el camp siga més alt còmodament */
+.tableForm textarea{ min-height: 80px; }
+
+
+
+
+
+			</style>
+		
+		<!-- // css -->
+		
+		<!-- js scripts -->
+					<script type="text/javascript" src="https://escolavalenciana.sinergiacrm.org/cache/include/javascript/sugar_grp1_jquery.js?v=NNrQfJ7NEJ6RQHVUP2yHWw"></script>
+					<script type="text/javascript" src="https://escolavalenciana.sinergiacrm.org/cache/include/javascript/sugar_grp1_yui.js?v=NNrQfJ7NEJ6RQHVUP2yHWw"></script>
+					<script type="text/javascript" src="https://escolavalenciana.sinergiacrm.org/cache/include/javascript/sugar_grp1.js?v=NNrQfJ7NEJ6RQHVUP2yHWw"></script>
+						<!-- // js scripts -->
+	</head>
+
+	<body>
+		<form action="https://escolavalenciana.sinergiacrm.org/index.php?entryPoint=stic_Web_Forms_save" name="WebToLeadForm" method="POST" id="WebToLeadForm" >
+			<p><input type="hidden" id="event_id" name="event_id" value="000009e9-edc0-7483-8e5d-68d3dd2049cd" /> <input type="hidden" id="redirect_url" name="redirect_url" value="https://escolavalenciana.org/web/nit-descola-valenciana/formulari-enviat-amb-exit-xxii-nit-descola-valenciana" /> <input type="hidden" id="redirect_ko_url" name="redirect_ko_url" value="https://escolavalenciana.org/web/nit-descola-valenciana/error-en-enviar-el-formulari-xxii-nit-descola-valenciana" /> <input type="hidden" id="validate_identification_number" name="validate_identification_number" value="1" /> <input type="hidden" id="assigned_user_id" name="assigned_user_id" value="00000cb5-f54a-bd8f-f4de-6847f3948d1e" /> <input type="hidden" id="req_id" name="req_id" value="Contacts___first_name;Contacts___last_name;Contacts___phone_mobile;Contacts___email1;Contacts___primary_address_street;Contacts___primary_address_postalcode;Contacts___primary_address_city;Contacts___stic_identification_type_c;Contacts___stic_identification_number_c;stic_Payment_Commitments___payment_method;" /> <input type="hidden" id="bool_id" name="bool_id" value="" /> <input type="hidden" id="webFormClass" name="webFormClass" value="EventInscription" /> <input type="hidden" id="stic_Payment_Commitments___payment_type" name="stic_Payment_Commitments___payment_type" value="donation" /> <input type="hidden" id="stic_Payment_Commitments___periodicity" name="stic_Payment_Commitments___periodicity" value="punctual" /> <input type="hidden" id="language" name="language" value="ca_ES" /> <input type="hidden" id="defParams" name="defParams" value="%7B%22include_payment_commitment%22%3A1%2C%22include_organization%22%3A0%2C%22account_code_mandatory%22%3A0%2C%22include_registration%22%3A1%2C%22account_name_optional%22%3A0%22email_template_id%22%3A%22%22%2C%22include_recaptcha%22%3A0%2C%22recaptcha_configKeys%22%3A%5B%22%28General%29%22%5D%2C%22recaptcha_selected%22%3A%22%22%7D" /> <input type="hidden" id="timeZone" name="timeZone" value="" /> <input type="hidden" id="stic_Payment_Commitments___amount" name="stic_Payment_Commitments___amount" value="38" /></p>
+<table class="tableForm">
+<tbody id="Contacts" class="section">
+<tr>
+<td id="td_lbl_Contacts___first_name" class="column_25"><span><label id="lbl_Contacts___first_name" for="Contacts___first_name">Nom:</label> <span id="lbl_Contacts___first_name_required" class="required">*</span> </span></td>
+<td id="td_Contacts___first_name" class="column_25"><span> <input id="Contacts___first_name" name="Contacts___first_name" type="text" span="" sugar="slot" /> </span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___last_name" class="column_25"><span><label id="lbl_Contacts___last_name" for="Contacts___last_name">Cognoms:</label> <span id="lbl_Contacts___last_name_required" class="required">*</span> </span></td>
+<td id="td_Contacts___last_name" class="column_25"><span> <input id="Contacts___last_name" name="Contacts___last_name" type="text" span="" sugar="slot" /> </span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___phone_mobile" class="column_25"><span><label id="lbl_Contacts___phone_mobile" for="Contacts___phone_mobile">Mòbil:</label> <span id="lbl_Contacts___phone_mobile_required" class="required">*</span> </span></td>
+<td id="td_Contacts___phone_mobile" class="column_25"><span> <input id="Contacts___phone_mobile" name="Contacts___phone_mobile" type="text" span="" sugar="slot" /> </span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___email1" class="column_25"><span><label id="lbl_Contacts___email1" for="Contacts___email1">Adreça de correu electrònic:</label> <span id="lbl_Contacts___email1_required" class="required">*</span> </span></td>
+<td id="td_Contacts___email1" class="column_25"><span> <input id="Contacts___email1" name="Contacts___email1" type="text" onchange="validateEmailAdd(this);" span="" sugar="slot" /> </span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___primary_address_street" class="column_25"><span><label id="lbl_Contacts___primary_address_street" for="Contacts___primary_address_street">Carrer:</label> <span id="lbl_Contacts___primary_address_street_required" class="required">*</span> </span></td>
+<td id="td_Contacts___primary_address_street" class="column_25"><span> <input id="Contacts___primary_address_street" name="Contacts___primary_address_street" type="text" span="" sugar="slot" /> </span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___primary_address_postalcode" class="column_25"><span><label id="lbl_Contacts___primary_address_postalcode" for="Contacts___primary_address_postalcode">Codi postal:</label> <span id="lbl_Contacts___primary_address_postalcode_required" class="required">*</span> </span></td>
+<td id="td_Contacts___primary_address_postalcode" class="column_25"><span> <input id="Contacts___primary_address_postalcode" name="Contacts___primary_address_postalcode" type="text" span="" sugar="slot" /> </span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___primary_address_city" class="column_25"><span><label id="lbl_Contacts___primary_address_city" for="Contacts___primary_address_city">Població:</label> <span id="lbl_Contacts___primary_address_city_required" class="required">*</span> </span></td>
+<td id="td_Contacts___primary_address_city" class="column_25"><span> <input id="Contacts___primary_address_city" name="Contacts___primary_address_city" type="text" span="" sugar="slot" /> </span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___stic_primary_address_county_c" class="column_25"><span><label id="lbl_Contacts___stic_primary_address_county_c" for="Contacts___stic_primary_address_county_c">Comarca:</label> </span></td>
+<td id="td_Contacts___stic_primary_address_county_c" class="column_25"><span><select id="Contacts___stic_primary_address_county_c" name="Contacts___stic_primary_address_county_c">
+<option label="Alacantí" value="alacanti">Alacantí</option>
+<option label="Alcoià" value="alcoia">Alcoià</option>
+<option label="Alt Maestrat" value="alt_maestrat">Alt Maestrat</option>
+<option label="Alt Millars" value="alt_millars">Alt Millars</option>
+<option label="Alt Palància" value="alt_palancia">Alt Palància</option>
+<option label="Alt Vinalopó" value="alt_vinalopo">Alt Vinalopó</option>
+<option label="Baix Maestrat" value="baix_maestrat">Baix Maestrat</option>
+<option label="Baix Segura" value="baix_segura">Baix Segura</option>
+<option label="Baix Vinalopó" value="baix_vinalopo">Baix Vinalopó</option>
+<option label="Camp de Morvedre" value="camp_de_morvedre">Camp de Morvedre</option>
+<option label="Camp de Túria" value="camp_de_turia">Camp de Túria</option>
+<option label="Canal de Navarrés" value="canal_de_navarres">Canal de Navarrés</option>
+<option label="Comtat" value="comtat">Comtat</option>
+<option label="Costera" value="costera">Costera</option>
+<option label="Foia de Bunyol" value="foia_de_bunyol">Foia de Bunyol</option>
+<option label="Horta Nord" value="horta_nord">Horta Nord</option>
+<option label="Horta Sud" value="horta_sud">Horta Sud</option>
+<option label="Marina Alta" value="marina_alta">Marina Alta</option>
+<option label="Marina Baixa" value="marina_baixa">Marina Baixa</option>
+<option label="Els Ports" value="els_ports">Els Ports</option>
+<option label="Plana Alta" value="plana_alta">Plana Alta</option>
+<option label="Plana Baixa" value="plana_baixa">Plana Baixa</option>
+<option label="Plana d'Utiel-Requena" value="plana_d_utiel_requena">Plana d'Utiel-Requena</option>
+<option label="Racó d'Ademús" value="raco_d_ademus">Racó d'Ademús</option>
+<option label="Ribera Alta" value="ribera_alta">Ribera Alta</option>
+<option label="Ribera Baixa" value="ribera_baixa">Ribera Baixa</option>
+<option label="Serrania" value="serrania">Serrania</option>
+<option label="Safor" value="safor">Safor</option>
+<option label="València" value="horta">València</option>
+<option label="Vall d'Albaida" value="vall_d_albaida">Vall d'Albaida</option>
+<option label="Vall de Cofrents-Aiora" value="vall_de_cofrents_aiora">Vall de Cofrents-Aiora</option>
+<option label="Vinalopó Mitjà" value="vinalopo_mitja">Vinalopó Mitjà</option>
+</select></span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___primary_address_state" class="column_25"><span><label id="lbl_Contacts___primary_address_state" for="Contacts___primary_address_state">Província:</label> </span></td>
+<td id="td_Contacts___primary_address_state" class="column_25"><span><select id="Contacts___primary_address_state" name="Contacts___primary_address_state">
+<option label="" value=""></option>
+<option label="Albacete" value="02">Albacete</option>
+<option label="Alacant" value="03">Alacant</option>
+<option label="Almeria" value="04">Almeria</option>
+<option label="Àlaba" value="01">Àlaba</option>
+<option label="Astúries" value="33">Astúries</option>
+<option label="Àvila" value="05">Àvila</option>
+<option label="Badajoz" value="06">Badajoz</option>
+<option label="Illes Balears" value="07">Illes Balears</option>
+<option label="Barcelona" value="08">Barcelona</option>
+<option label="Biscaia" value="48">Biscaia</option>
+<option label="Burgos" value="09">Burgos</option>
+<option label="Càceres" value="10">Càceres</option>
+<option label="Cadis" value="11">Cadis</option>
+<option label="Cantàbria" value="39">Cantàbria</option>
+<option label="Castelló de la Plana" value="12">Castelló de la Plana</option>
+<option label="Ceuta" value="51">Ceuta</option>
+<option label="Ciudad Real" value="13">Ciudad Real</option>
+<option label="Còrdova" value="14">Còrdova</option>
+<option label="Corunya, la" value="15">Corunya, la</option>
+<option label="Conca" value="16">Conca</option>
+<option label="Guipúscoa" value="20">Guipúscoa</option>
+<option label="Girona" value="17">Girona</option>
+<option label="Granada" value="18">Granada</option>
+<option label="Guadalajara" value="19">Guadalajara</option>
+<option label="Huelva" value="21">Huelva</option>
+<option label="Osca" value="22">Osca</option>
+<option label="Jaén" value="23">Jaén</option>
+<option label="Lleó" value="24">Lleó</option>
+<option label="Lleida" value="25">Lleida</option>
+<option label="Lugo" value="27">Lugo</option>
+<option label="Madrid" value="28">Madrid</option>
+<option label="Màlaga" value="29">Màlaga</option>
+<option label="Melilla" value="52">Melilla</option>
+<option label="Múrcia" value="30">Múrcia</option>
+<option label="Navarra" value="31">Navarra</option>
+<option label="Ourense" value="32">Ourense</option>
+<option label="Palència" value="34">Palència</option>
+<option label="Palmas, Las" value="35">Palmas, Las</option>
+<option label="Pontevedra" value="36">Pontevedra</option>
+<option label="Rioja, La" value="26">Rioja, La</option>
+<option label="Salamanca" value="37">Salamanca</option>
+<option label="Santa Cruz de Tenerife" value="38">Santa Cruz de Tenerife</option>
+<option label="Segòvia" value="40">Segòvia</option>
+<option label="Sevilla" value="41">Sevilla</option>
+<option label="Sòria" value="42">Sòria</option>
+<option label="Tarragona" value="43">Tarragona</option>
+<option label="Terol" value="44">Terol</option>
+<option label="Toledo" value="45">Toledo</option>
+<option label="València" value="46">València</option>
+<option label="Valladolid" value="47">Valladolid</option>
+<option label="Zamora" value="49">Zamora</option>
+<option label="Saragossa" value="50">Saragossa</option>
+<option label="No residents" value="99">No residents</option>
+</select></span></td>
+</tr>
+<tr class="spacer" aria-hidden="true">
+  <td class="column_25"><span>&nbsp;</span></td>
+  <td class="column_25"><span>&nbsp;</span></td>
+</tr>
+<tr class="pair-start">
+<td id="td_lbl_Contacts___stic_identification_type_c" class="column_25"><span><label id="lbl_Contacts___stic_identification_type_c" for="Contacts___stic_identification_type_c">Tipus d'identificació:</label> <span id="lbl_Contacts___stic_identification_type_c_required" class="required">*</span> </span></td>
+<td id="td_Contacts___stic_identification_type_c" class="column_25"><span><select id="Contacts___stic_identification_type_c" name="Contacts___stic_identification_type_c">
+<option label="" value=""></option>
+<option label="DNI" value="dni">DNI</option>
+<option label="NIE" value="nie">NIE</option>
+<option label="NIF" value="nif">NIF</option>
+<option label="Passaport" value="passport">Passaport</option>
+<option label="Altres" value="other">Altres</option>
+</select></span></td>
+</tr>
+<tr>
+<td id="td_lbl_Contacts___stic_identification_number_c" class="column_25"><span><label id="lbl_Contacts___stic_identification_number_c" for="Contacts___stic_identification_number_c">Número d'identificació:</label> <span id="lbl_Contacts___stic_identification_number_c_required" class="required">*</span> </span></td>
+<td id="td_Contacts___stic_identification_number_c" class="column_25"><span> <input id="Contacts___stic_identification_number_c" name="Contacts___stic_identification_number_c" type="text" span="" sugar="slot" /> </span></td>
+</tr>
+</tbody>
+<tbody id="stic_Registrations" class="section">
+<tr id="row_preu_visible" class="pair-start">
+  <td class="column_25"><span><label>Preu:</label></span></td>
+  <td class="column_25"><span><strong id="total_display">38,00 €</strong></span></td>
+</tr>
+<tr>
+  <td id="td_lbl_stic_Registrations___codi_descompte_c" class="column_25">
+    <span><label id="lbl_stic_Registrations___codi_descompte_c" for="stic_Registrations___codi_descompte_c">Codi de tarifa d'Activista:</label></span>
+  </td>
+  <td id="td_stic_Registrations___codi_descompte_c" class="column_25">
+    <span><input id="stic_Registrations___codi_descompte_c" name="stic_Registrations___codi_descompte_c" type="text" sugar="slot" /></span>
+  </td>
+</tr>
+
+
+</tbody>
+<tbody id="stic_Payment_Commitments" class="section">
+<!-- Concepte del rebut (ara primer, columna esquerra) -->
+<tr>
+  <td id="td_lbl_stic_Payment_Commitments___banking_concept" class="column_25">
+    <span><label id="lbl_stic_Payment_Commitments___banking_concept" for="stic_Payment_Commitments___banking_concept">Concepte:</label></span>
+  </td>
+  <td id="td_stic_Payment_Commitments___banking_concept" class="column_25">
+    <span>
+      <input
+        id="stic_Payment_Commitments___banking_concept"
+        name="stic_Payment_Commitments___banking_concept"
+        type="text"
+        value="Sopar de la XXII Nit d'Escola Valenciana"
+        readonly
+        aria-readonly="true"
+        sugar="slot"
+      />
+    </span>
+  </td>
+</tr>
+
+
+<!-- Mitjà de pagament (ara segon, columna dreta) -->
+<tr>
+  <td id="td_lbl_stic_Payment_Commitments___payment_method" class="column_25">
+    <span><label id="lbl_stic_Payment_Commitments___payment_method" for="stic_Payment_Commitments___payment_method">Mitjà de pagament:</label> <span id="lbl_stic_Payment_Commitments___payment_method_required" class="required">*</span></span>
+  </td>
+  <td id="td_stic_Payment_Commitments___payment_method" class="column_25">
+    <span>
+      <select id="stic_Payment_Commitments___payment_method" name="stic_Payment_Commitments___payment_method" onchange="adaptPaymentMethod(this)">
+        <option label="" value=""></option>
+        <option label="Targeta (via Redsys)" value="card">Targeta (via Redsys)</option>
+        <option label="Bizum" value="bizum">Bizum</option>
+      </select>
+    </span>
+  </td>
+</tr>
+<tbody id="hidden_fields" class="section" style="display:none;">
+  <tr>
+    <td id="td_lbl_stic_Registrations___tipus_tarifa_c" class="column_25"><span>
+      <label id="lbl_stic_Registrations___tipus_tarifa_c" for="stic_Registrations___tipus_tarifa_c">Tipus de tarifa:</label>
+    </span></td>
+    <td id="td_stic_Registrations___tipus_tarifa_c" class="column_25"><span>
+      <select id="stic_Registrations___tipus_tarifa_c" name="stic_Registrations___tipus_tarifa_c">
+        <option label="Tarifa d'Activista" value="tarifa_activista">Tarifa d'Activista</option>
+        <option label="Tarifa general" value="tarifa_general">Tarifa general</option>
+      </select>
+    </span></td>
+  </tr>
+</tbody>
+
+</tbody>
+<tbody id="stic_Registrations_extra" class="section">
+  <tr class="fullrow">
+    <td id="td_lbl_stic_Registrations___allergies_c" class="column_25">
+      <span><label id="lbl_stic_Registrations___allergies_c" for="stic_Registrations___allergies_c">Al·lèrgies:</label></span>
+    </td>
+    <td id="td_stic_Registrations___allergies_c" class="column_25">
+      <span>
+        <textarea id="stic_Registrations___allergies_c" name="stic_Registrations___allergies_c" sugar="slot" rows="3" placeholder="Indica al·lèrgies o intoleràncies (si n’hi ha)"></textarea>
+      </span>
+    </td>
+  </tr>
+  <tr>
+  <td id="td_lbl_stic_Registrations___tipus_menu_c" class="column_25">
+    <span><label id="lbl_stic_Registrations___tipus_menu_c" for="stic_Registrations___tipus_menu_c">Tipus de menú:</label></span>
+  </td>
+  <td id="td_stic_Registrations___tipus_menu_c" class="column_25">
+    <span>
+      <select id="stic_Registrations___tipus_menu_c" name="stic_Registrations___tipus_menu_c">
+		<option label="Omnívor" value="Omnivor">Omnívor</option>
+        <option label="Vegà" value="Vega">Vegà</option>
+      </select>
+    </span>
+  </td>
+</tr>
+
+</tbody>
+
+<tbody>
+<tr>
+<td> </td>
+<td><input class="button" type="button" onclick="submitForm(this.form);" name="Submit" value="Inscriu-te al sopar" /></td>
+</tr>
+</tbody>
+</table>
+		</form>		
+		<script type="text/javascript">
+							var stic_Web_Forms_LBL_PROVIDE_WEB_FORM_FIELDS = "Ompliu els camps obligatoris";
+							var stic_Web_Forms_LBL_INVALID_FORMAT = "Comproveu el format del camp";
+							var stic_Web_Forms_LBL_SERVER_CONNECTION_ERROR = "Ha fallat la connexió amb el servidor";
+							var stic_Web_Forms_LBL_SIZE_FILE_EXCEED = "La mida del fitxer no pot ser superior a ";
+							var stic_Web_Forms_LBL_SUM_SIZE_FILES_EXCEED = "La suma de les mides dels fitxers no pot ser superior a ";
+							var APP_LBL_REQUIRED_SYMBOL = "*";
+							var APP_DATE_FORMAT = "%d/%m/%Y";
+							var stic_Payment_Commitments_LBL_IBAN_NOT_VALID = "LBL_IBAN_NOT_VALID";
+						/**
+ * This file is part of SinergiaCRM.
+ * SinergiaCRM is a work developed by SinergiaTIC Association, based on SuiteCRM.
+ * Copyright (C) 2013 - 2023 SinergiaTIC Association
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License version 3 as published by the
+ * Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program; if not, see http://www.gnu.org/licenses or write to the Free
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301 USA.
+ *
+ * You can contact SinergiaTIC Association at email address info@sinergiacrm.org.
+ */
+/**
+ * Change the visibility of a field
+ * @param field field to be changed
+ * @param visibility visibility applied to the field
+ */
+function changeVisibility(field, visibility) {
+  var o_td = document.getElementById("td_" + field);
+  var o_td_lbl = document.getElementById("td_lbl_" + field);
+  if (o_td) {
+    o_td.style.display = visibility;
+  }
+
+  if (o_td_lbl) {
+    o_td_lbl.style.display = visibility;
+  }
+}
+
+/**
+ * Show a hidden field
+ * @param field field to be shown
+ */
+function showField(field) {
+  changeVisibility(field, "table-cell");
+}
+
+/**
+ * Hide a field
+ * @param field field to be hidden
+ */
+function hideField(field) {
+  changeVisibility(field, "none");
+}
+
+/**
+ * Add a field as required
+ * @param field field that will be set as required
+ */
+function addRequired(field) {
+  var reqs = document.getElementById("req_id").value;
+  if (-1 == reqs.search(field + ";")) {
+    document.getElementById("req_id").value += field + ";";
+  }
+
+  var requiredLabel = document.getElementById("lbl_" + field + "_required");
+  if (!requiredLabel) {
+    var rlParent = document.getElementById("td_lbl_" + field);
+    if (rlParent) {
+      var newLabel = document.createElement("span");
+      newLabel.id = "lbl_" + field + "_required";
+      newLabel.class = "required";
+      newLabel.style = "color: rgb(255, 0, 0);";
+      newLabel.innerText = APP_LBL_REQUIRED_SYMBOL;
+      rlParent.appendChild(newLabel);
+    }
+  }
+}
+
+/**
+ * Delete a field as required
+ * @param field field that will be set as no required
+ */
+function removeRequired(field) {
+  var reqs = document.getElementById("req_id").value;
+  document.getElementById("req_id").value = reqs.replace(field + ";", "");
+  var requiredLabel = document.getElementById("lbl_" + field + "_required");
+  if (requiredLabel) {
+    requiredLabel.parentNode.removeChild(requiredLabel);
+  }
+}
+
+/**
+ * Validate different form fields
+ * @returns {Boolean}
+ */
+function checkFields() {
+  // Check the required fields, nif / cif fields, mails and date fields
+  if (!validateRequired() || !validateNifCif() || !validateMails() || !validateDates()) {
+    return false;
+  } else {
+    // If everything is correct replace the Boolean fields
+    var boolHidden = document.getElementById("bool_id");
+    if (boolHidden != null) {
+      var reqs = boolHidden.value;
+      if (reqs.length) {
+        // If there are Boolean fields, they are treated
+        bools = reqs.substring(0, reqs.lastIndexOf(";"));
+        var boolFields = new Array();
+        var boolFields = bools.split(";");
+        nbrFields = boolFields.length;
+        for (var i = 0; i < nbrFields; i++) {
+          var element = document.getElementById(boolFields[i]);
+          element.value == (element.value == "on" ? 1 : 0);
+        }
+      }
+    }
+    return true;
+  }
+}
+
+/**
+ * Check the format of the date fields
+ * @returns {Boolean}
+ */
+function validateDates() {
+  var elements = $.find("input[type=text].date_input");
+  if (elements && elements.length > 0) {
+    for (var i = 0; i < elements.length; i++) {
+      // The field may not be mandatory, therefore, it is only validated if the element has any value
+      if (elements[i].value && !validateDate(elements[i].value)) {
+        var label = document.getElementById("lbl_" + elements[i].id);
+        alert(stic_Web_Forms_LBL_INVALID_FORMAT + ": " + label.textContent.trim().replace(/:$/, ""));
+        selectTextInput(elements[i]);
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Validate a date using the format indicated in APP_DATE_FORMAT. Does not take into account if the year is leap year
+ * @param date
+ * @returns {Boolean}
+ */
+function validateDate(date) {
+  var number = /\d+/g;
+  var numbers = [];
+  var match = number.exec(date);
+
+  while (match != null) {
+    numbers.push(match[0]);
+    match = number.exec(date);
+  }
+
+  if (numbers.length != 3) {
+    // If we don't have three numeric fields, it sure isn't a date
+    return false;
+  }
+
+  var format = /\%Y|\%m|\%d/g;
+  var fields = [];
+  match = format.exec(APP_DATE_FORMAT); // We separate the fields from the format
+  while (match != null) {
+    fields.push(match[0]);
+    match = format.exec(APP_DATE_FORMAT);
+  }
+
+  var idxFields = []; // Index the fields to be able to access them directly
+  for (var i = 0; i < fields.length; i++) {
+    idxFields[fields[i].replace("%", "")] = i;
+  }
+
+  // Retrieve the values ​​of each field
+  var day = numbers[idxFields.d];
+  var month = numbers[idxFields.m];
+  var year = numbers[idxFields.Y];
+
+  // Check the length of the fields
+  if (month.length != 2 || day.length != 2 || year.length != 4) {
+    return false;
+  }
+
+  // Check the format of separators
+  if (date.replace(number, "") != APP_DATE_FORMAT.replace(format, "")) {
+    return false;
+  }
+  day = parseInt(day);
+  month = parseInt(month);
+  year = parseInt(year);
+
+  // Check the value of the month and day
+  if (month > 12 || month < 1) {
+    return false;
+  } else {
+    if (day < 1) {
+      return false;
+    }
+
+    switch (month) {
+      case 1:
+      case 3:
+      case 5:
+      case 7:
+      case 8:
+      case 10:
+      case 12:
+        return day <= 31;
+      case 2:
+        return day <= 29; // Leap years are not taken into account
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        return day <= 30;
+    }
+  }
+}
+
+/**
+ * Check the required fields
+ * @returns {Boolean}
+ */
+function validateRequired() {
+  // Check the required fields
+  var reqHidden = document.getElementById("req_id");
+  if (reqHidden != null) {
+    var reqs = reqHidden.value;
+    if (reqs.length) {
+      // If there are required fields check them
+      reqs = reqs.substring(0, reqs.lastIndexOf(";"));
+      var reqFields = new Array();
+      var reqFields = reqs.split(";");
+      nbrFields = reqFields.length;
+
+      for (var i = 0; i < nbrFields; i++) {
+        var lbl_element;
+        var element = document.getElementById(reqFields[i]);
+        var error = 0;
+        if (element != null) {
+          lbl_element = "#lbl_" + element.id;
+          $(lbl_element).removeClass("current-required-field");
+          switch (element.type) {
+            case "checkbox":
+              if (element.checked == 0) {
+                error = 1;
+              }
+              break;
+
+            case "select-one":
+              if (element.selectedIndex <= 0) {
+                error = 1;
+              }
+              break;
+
+            case "select-multiple":
+              let numOptionsSelected = $("select[id='input_selectmultiple'] option:selected").length;
+              if (element.selectedIndex <= 0 && numOptionsSelected <= 1) {
+                error = 1;
+              }
+              break;
+
+            default:
+              // Type fields: text, email, password...
+              if (element.value.length <= 0) {
+                error = 1;
+              }
+          }
+        } else {
+          //radio type fields
+          error = 1;
+          var options = document.getElementsByName(reqFields[i]);
+
+          lbl_element = "#lbl_" + options[0].name;
+          $(lbl_element).removeClass("current-required-field");
+
+          options.forEach(function(option) {
+            if (option.checked) {
+              error = 0;
+            }
+          });
+        }
+
+        if (error) {
+          alert(stic_Web_Forms_LBL_PROVIDE_WEB_FORM_FIELDS);
+          $(lbl_element).addClass("current-required-field");
+          selectTextInput(element);
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Validate form emails
+ * @returns {Boolean}
+ */
+ function validateMails() {
+  var fields = ["Contacts___email1", "Contacts___email2", "Accounts___email1", "Accounts___email2"];
+  var ret = true;
+  for (var i = 0; i < fields.length && ret; i++) {
+    emailInput=document.getElementById(fields[i])
+    if(emailInput != undefined)
+    {
+      ret = validateEmailAdd(emailInput);
+    }
+  }
+  return ret;
+}
+
+/**
+ * Validate an email address
+ * Regex validation email from https://html5-tutorial.net/form-validation/validating-email/
+ * @param obj DOM object of the input containing the mail
+ * @returns {Boolean}
+ */
+
+function validateEmailAdd(obj) {
+  obj.value=obj.value.trim();
+  if (obj != null && obj.value.length > 0 && !isValidEmail(obj.value)) {
+    var label = document.getElementById("lbl_" + obj.id);
+    alert(stic_Web_Forms_LBL_INVALID_FORMAT + ": " + label.textContent.replace(/: +$/, ""));
+    selectTextInput(obj);
+    return false;
+  } else {
+    return true;
+  }
+}
+
+/**
+ * Check the identification number fields for contacts and accounts as needed
+ * @returns {Boolean}
+ */
+function validateNifCif() {
+  var validateIdentificationNumber = document.getElementById("validate_identification_number");
+
+  // Return true if identification number validation is not required
+  if (validateIdentificationNumber && validateIdentificationNumber.value == "0") {
+    console.log("Identification number validation is not required.");
+    return true;
+  }
+
+  // NIF validation
+  var identificationType = $("#Contacts___stic_identification_type_c").val();
+  // Validate if the stic_identification_type_c field is not defined or is defined as NIF or NIE. 
+  // Other values like passports and so on should not be validated as there's no rule to do it.
+  if (identificationType == null || identificationType == "nif" || identificationType == "nie") {
+    var nif = document.getElementById("Contacts___stic_identification_number_c");
+    // The nif field may not be required so it can be empty. If so, it is not necessary to validate it
+    if (nif && nif.value && !isValidDNI(nif.value)) {
+      label = " ";
+      if (nif.labels && nif.labels[0]) {
+        label += (nif.labels[0].textContent.slice(-1) == ":" ? nif.labels[0].textContent.substring(0, nif.labels[0].textContent.length - 1) : nif.labels[0].textContent);
+      }
+      alert(stic_Web_Forms_LBL_INVALID_FORMAT + label + ".");
+      nif.focus();
+      return false;
+    }
+  }
+
+  // CIF validation
+  var cif = document.getElementById("Accounts___stic_identification_number_c");
+  // The cif field may not be required so it can be empty. If so, it is not necessary to validate it
+  if (cif && cif.value && !isValidCif(cif.value)) {
+    label = " ";
+    if (cif.labels && cif.labels[0]) {
+      label += (cif.labels[0].textContent.slice(-1) == ":" ? cif.labels[0].textContent.substring(0, cif.labels[0].textContent.length - 1) : cif.labels[0].textContent);
+    }
+    alert(stic_Web_Forms_LBL_INVALID_FORMAT + label + ".");
+    cif.focus();
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Check with each change of value in the field that only number and separator are allowed of decimals '.'
+ * @returns {Boolean}
+ */
+function isNumberKey(evt) {
+  var charCode = evt.which ? evt.which : event.keyCode;
+  if (charCode != 46 && charCode > 31 && (charCode < 48 || charCode > 57)) {
+    return false;
+  }
+
+  if (charCode == 46) {
+    var evento = evt || event;
+    var dots = evento.currentTarget.value.match(/\./g); // If there is already a point, you cannot add another
+    if (dots && dots.length > 0) {
+      return false;
+    }
+    if (evento.currentTarget.value.length == 0) {
+      // If the point is at the beginning it includes a 0
+      evento.currentTarget.value = "0";
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Format a value in a number with fixed-point notation
+ * @param input currency type field in which to validate the format
+ */
+function formatCurrency(input) {
+  var value = Number(input.value);
+  if (!isNaN(value)) {
+    input.value = value.toFixed(2);
+  }
+}
+
+/**
+ * Valid if a cif is valid
+ * Adapted to javascript from its original in:
+ * http://www.michublog.com/informatica/8-funciones-para-la-validacion-de-formularios-con-expresiones-regulares
+ * @param cif
+ * @returns {Boolean}
+ */
+function isValidCif(cif) {
+  cif.toUpperCase();
+  cifRegEx1 = /^[ABEH][0-9]{8}/i;
+  cifRegEx2 = /^[KPQS][0-9]{7}[A-J]/i;
+  cifRegEx3 = /^[CDFGJLMNRUVW][0-9]{7}[0-9A-J]/i;
+
+  if (cif.match(cifRegEx1) || cif.match(cifRegEx2) || cif.match(cifRegEx3)) {
+    control = cif.charAt(cif.length - 1);
+    sum_A = 0;
+    sum_B = 0;
+    for (i = 1; i < 8; i++) {
+      if (i % 2 == 0) {
+        sum_A += parseInt(cif.charAt(i));
+      } else {
+        t = (parseInt(cif.charAt(i)) * 2).toString();
+        p = 0;
+        for (j = 0; j < t.length; j++) {
+          p += parseInt(t.charAt(j));
+        }
+        sum_B += p;
+      }
+    }
+
+    sum_C = parseInt(sum_A + sum_B) + ""; // Así se convierte en cadena
+    sum_D = (10 - parseInt(sum_C.charAt(sum_C.length - 1))) % 10;
+    letters = "JABCDEFGHI";
+
+    if (control >= "0" && control <= "9") {
+      return control == sum_D;
+    } else {
+      return control.toUpperCase() == letters[sum_D];
+    }
+  } else {
+    return false;
+  }
+}
+
+/**
+ * Check if it is a correct ID (between 5 and 8 letters followed by the corresponding letter).
+ * Accept NIEs (Foreigners with X, Y or Z at the beginning)
+ * http://trellat.es/funcion-para-validar-dni-o-nie-en-javascript/
+ * @param dni
+ * @returns {Boolean}
+ */
+function isValidDNI(dni) {
+  var number, lett, letter;
+  var regular_expression_dni = /^[XYZ]?\d{5,8}[A-Z]$/;
+  dni = dni.toUpperCase();
+
+  if (regular_expression_dni.test(dni) === true) {
+    number = dni.substr(0, dni.length - 1);
+    number = number.replace("X", 0);
+    number = number.replace("Y", 1);
+    number = number.replace("Z", 2);
+    lett = dni.substr(dni.length - 1, 1);
+    number = number % 23;
+
+    letter = "TRWAGMYFPDXBNJZSQVHLCKET";
+    letter = letter.substring(number, number + 1);
+
+    return letter == lett;
+  } else {
+    return false;
+  }
+}
+
+/**
+ * Assign a value to a select field
+ * @param select form field element
+ * @param value value that the select option must have to be selected
+ */
+//
+function setSelectValue(select, value) {
+  for (var i = 0; i < select.options.length; i++) {
+    if (select.options[i].value == value) {
+      select.options[i].selected = true;
+    } else {
+      select.options[i].selected = false;
+    }
+  }
+  // Save the previous value
+  select.prev_value = select.options[select.selectedIndex].value;
+}
+
+/**
+ * Select the text of an input text of the form
+ * @param input Object from which the text will be selected
+ */
+function selectTextInput(input) {
+  if (typeof input.setSelectionRange != "undefined") {
+    input.setSelectionRange(0, input.value.length);
+  }
+  input.focus();
+}
+
+/**
+ * Verify that the size of the form attachments does not exceed the size defined in the PHP configuration
+ */
+var items;
+var formSizeArray = [];
+
+var url =
+  $("form")
+    .attr("action")
+    .split("=")[0] + "=stic_Web_Forms_attachment_limits_response";
+$.ajax({
+  url: url,
+  dataType: "jsonp"
+});
+
+/**
+ * Gets values of the PHP configuration in the system
+ * @param data array from which the values ​​are obtained
+ */
+function getConfigVariables(data) {
+  items = data;
+  if (!items.uploadMaxFilesize || !items.postMaxSize) {
+    alert(stic_Web_Forms_LBL_SERVER_CONNECTION_ERROR);
+  }
+}
+
+/**
+ * Check if the attachment file size added to the input file is sizer
+ * to the configuration variable php upload_max_filesize
+ */
+$(".document").change(function() {
+  var numInput = this.id.substring(this.id.length - 1, this.id.length);
+  var errorZone = "#error_zone_" + numInput;
+  if (this.files[0]) {
+    var fileName = this.files[0].name;
+    var fileSize = this.files[0].size;
+    if (fileSize > items.uploadMaxFilesizeBytes) {
+      $(errorZone).html("<span>" + stic_Web_Forms_LBL_SIZE_FILE_EXCEED + items.uploadMaxFilesize + "B </span>");
+      formSizeArray[numInput - 1] = fileSize;
+    } else {
+      $(errorZone).html("");
+      formSizeArray[numInput - 1] = fileSize;
+    }
+  } else {
+    $(errorZone).html("");
+    formSizeArray[numInput - 1] = 0;
+  }
+});
+
+/**
+ * Check the total size of the files attached to the form
+ * @returns {Boolean}
+ */
+function checkFormSize() {
+  if (items) {
+    var formSize = 0;
+    var fileZizeError = 0;
+
+    formSizeArray.forEach(function(inputSize) {
+      if (inputSize) {
+        if (inputSize > items.uploadMaxFilesizeBytes) {
+          fileZizeError = 1;
+        }
+        formSize = formSize + inputSize;
+      }
+    });
+
+    if (fileZizeError) {
+      alert(stic_Web_Forms_LBL_SIZE_FILE_EXCEED + items.uploadMaxFilesize + "B");
+      return false;
+    }
+
+    if (formSize <= items.postMaxSizeBytes) {
+      return true;
+    } else {
+      alert(stic_Web_Forms_LBL_SUM_SIZE_FILES_EXCEED + items.postMaxSize + "B");
+      return false;
+    }
+  } else {
+    return true;
+  }
+}
+
+/**
+ * Fills the timeZone variable on loading.
+ */
+$('#timeZone').val(Intl.DateTimeFormat().resolvedOptions().timeZone);
+/**
+ * This file is part of SinergiaCRM.
+ * SinergiaCRM is a work developed by SinergiaTIC Association, based on SuiteCRM.
+ * Copyright (C) 2013 - 2023 SinergiaTIC Association
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License version 3 as published by the
+ * Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program; if not, see http://www.gnu.org/licenses or write to the Free
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301 USA.
+ *
+ * You can contact SinergiaTIC Association at email address info@sinergiacrm.org.
+ */
+var formHasAlreadyBeenSent = false;
+/**
+ * Form submission function
+ * @param form form to be sent
+ */
+function submitForm(form) {
+  if (checkFields() && checkFormSize()) {
+    if (typeof validateCaptchaAndSubmit != "undefined") {
+      validateCaptchaAndSubmit();
+    } else {
+        if (formHasAlreadyBeenSent != true) {
+            formHasAlreadyBeenSent = true;
+            form.submit();
+        } else {
+            console.log("Form is locked because it has already been sent.");
+        }
+    }
+  }
+  return false;
+}
+/**
+ * This file is part of SinergiaCRM.
+ * SinergiaCRM is a work developed by SinergiaTIC Association, based on SuiteCRM.
+ * Copyright (C) 2013 - 2023 SinergiaTIC Association
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License version 3 as published by the
+ * Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program; if not, see http://www.gnu.org/licenses or write to the Free
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301 USA.
+ *
+ * You can contact SinergiaTIC Association at email address info@sinergiacrm.org.
+ */
+/**
+ * Library Code https://github.com/arhs/iban.js
+ */
+(function(root, factory) {
+  if (typeof define === "function" && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(["exports"], factory);
+  } else if (typeof exports === "object" && typeof exports.nodeName !== "string") {
+    // CommonJS
+    factory(exports);
+  } else {
+    // Browser globals
+    factory((root.IBAN = {}));
+  }
+})(this, function(exports) {
+  // Array.prototype.map polyfill
+  // Code from https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Array/map
+  if (!Array.prototype.map) {
+    Array.prototype.map = function(fun /*, thisArg */) {
+      "use strict";
+      if (this === void 0 || this === null) {
+        throw new TypeError();
+      }
+
+      var t = Object(this);
+      var len = t.length >>> 0;
+      if (typeof fun !== "function") {
+        throw new TypeError();
+      }
+
+      var res = new Array(len);
+      var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+      for (var i = 0; i < len; i++) {
+        /* 
+          STIC NOTE: Absolute correctness would demand Object.defineProperty be used.  But this method is fairly new, and failure is possible only 
+          if Object.prototype or Array.prototype has a property |i| (very unlikely), so use a less-correct but more portable alternative.
+        */
+        if (i in t) {
+          res[i] = fun.call(thisArg, t[i], i, t);
+        }
+      }
+      return res;
+    };
+  }
+
+  var A = "A".charCodeAt(0),
+    Z = "Z".charCodeAt(0);
+
+  /**
+   * Prepare an IBAN for mod 97 computation by moving the first 4 chars to the end and transforming the letters to numbers (A = 10, B = 11,   .., Z = 35), as specified in ISO13616.
+   *
+   * @param {string} iban the IBAN
+   * @returns {string} the prepared IBAN
+   */
+  function iso13616Prepare(iban) {
+    iban = iban.toUpperCase();
+    iban = iban.substr(4) + iban.substr(0, 4);
+    return iban
+      .split("")
+      .map(function(n) {
+        var code = n.charCodeAt(0);
+        if (code >= A && code <= Z) {
+          // A = 10, B = 11, ... Z = 35
+          return code - A + 10;
+        } else {
+          return n;
+        }
+      })
+      .join("");
+  }
+
+  /**
+   * Calculates the MOD 97 10 of the passed IBAN as specified in ISO7064.
+   *
+   * @param iban
+   * @returns {number}
+   */
+  function iso7064Mod97_10(iban) {
+    var remainder = iban,
+      block;
+
+    while (remainder.length > 2) {
+      block = remainder.slice(0, 9);
+      remainder = (parseInt(block, 10) % 97) + remainder.slice(block.length);
+    }
+
+    return parseInt(remainder, 10) % 97;
+  }
+
+  /**
+   * Parse the BBAN structure used to configure each IBAN Specification and returns a matching regular expression.
+   * A structure is composed of blocks of 3 characters (one letter and 2 digits). Each block represents
+   * a logical group in the typical representation of the BBAN. For each group, the letter indicates which characters
+   * are allowed in this group and the following 2-digits number tells the length of the group.
+   *
+   * @param {string} structure the structure to parse
+   * @returns {RegExp}
+   */
+  function parseStructure(structure) {
+    // split in blocks of 3 chars
+    var regex = structure.match(/(.{3})/g).map(function(block) {
+      // parse each structure block (1-char + 2-digits)
+      var format,
+        pattern = block.slice(0, 1),
+        repeats = parseInt(block.slice(1), 10);
+
+      switch (pattern) {
+        case "A":
+          format = "0-9A-Za-z";
+          break;
+        case "B":
+          format = "0-9A-Z";
+          break;
+        case "C":
+          format = "A-Za-z";
+          break;
+        case "F":
+          format = "0-9";
+          break;
+        case "L":
+          format = "a-z";
+          break;
+        case "U":
+          format = "A-Z";
+          break;
+        case "W":
+          format = "0-9a-z";
+          break;
+      }
+      return "([" + format + "]{" + repeats + "})";
+    });
+    return new RegExp("^" + regex.join("") + "$");
+  }
+
+  /**
+   * @param iban
+   * @returns {string}
+   */
+  function electronicFormat(iban) {
+    return iban.replace(NON_ALPHANUM, "").toUpperCase();
+  }
+
+  /**
+   * Create a new Specification for a valid IBAN number.
+   *
+   * @param countryCode the code of the country
+   * @param length the length of the IBAN
+   * @param structure the structure of the underlying BBAN (for validation and formatting)
+   * @param example an example valid IBAN
+   * @constructor
+   */
+  function Specification(countryCode, length, structure, example) {
+    this.countryCode = countryCode;
+    this.length = length;
+    this.structure = structure;
+    this.example = example;
+  }
+
+  /**
+   * Lazy-loaded regex (parse the structure and construct the regular expression the first time we need it for validation)
+   */
+  Specification.prototype._regex = function() {
+    return this._cachedRegex || (this._cachedRegex = parseStructure(this.structure));
+  };
+
+  /**
+   * Check if the passed iban is valid according to this specification.
+   *
+   * @param {String} iban the iban to validate
+   * @returns {boolean} true if valid, false otherwise
+   */
+  Specification.prototype.isValid = function(iban) {
+    return this.length == iban.length && this.countryCode === iban.slice(0, 2) && this._regex().test(iban.slice(4)) && iso7064Mod97_10(iso13616Prepare(iban)) == 1;
+  };
+
+  /**
+   * Convert the passed IBAN to a country-specific BBAN.
+   *
+   * @param iban the IBAN to convert
+   * @param separator the separator to use between BBAN blocks
+   * @returns {string} the BBAN
+   */
+  Specification.prototype.toBBAN = function(iban, separator) {
+    return this._regex()
+      .exec(iban.slice(4))
+      .slice(1)
+      .join(separator);
+  };
+
+  /**
+   * Convert the passed BBAN to an IBAN for this country specification.
+   * Please note that <i>"generation of the IBAN shall be the exclusive responsibility of the bank/branch servicing the account"</i>.
+   * This method implements the preferred algorithm described in http://en.wikipedia.org/wiki/International_Bank_Account_Number#Generating_IBAN_check_digits
+   *
+   * @param bban the BBAN to convert to IBAN
+   * @returns {string} the IBAN
+   */
+  Specification.prototype.fromBBAN = function(bban) {
+    if (!this.isValidBBAN(bban)) {
+      throw new Error("Invalid BBAN");
+    }
+    var remainder = iso7064Mod97_10(iso13616Prepare(this.countryCode + "00" + bban)),
+      checkDigit = ("0" + (98 - remainder)).slice(-2);
+
+    return this.countryCode + checkDigit + bban;
+  };
+
+  /**
+   * Check of the passed BBAN is valid.
+   * This function only checks the format of the BBAN (length and matching the letetr/number specs) but does not
+   * verify the check digit.
+   *
+   * @param bban the BBAN to validate
+   * @returns {boolean} true if the passed bban is a valid BBAN according to this specification, false otherwise
+   */
+  Specification.prototype.isValidBBAN = function(bban) {
+    return this.length - 4 == bban.length && this._regex().test(bban);
+  };
+
+  var countries = {};
+  function addSpecification(IBAN) {
+    countries[IBAN.countryCode] = IBAN;
+  }
+
+  addSpecification(new Specification("AD", 24, "F04F04A12", "AD1200012030200359100100"));
+  addSpecification(new Specification("AE", 23, "F03F16", "AE070331234567890123456"));
+  addSpecification(new Specification("AL", 28, "F08A16", "AL47212110090000000235698741"));
+  addSpecification(new Specification("AT", 20, "F05F11", "AT611904300234573201"));
+  addSpecification(new Specification("AZ", 28, "U04A20", "AZ21NABZ00000000137010001944"));
+  addSpecification(new Specification("BA", 20, "F03F03F08F02", "BA391290079401028494"));
+  addSpecification(new Specification("BE", 16, "F03F07F02", "BE68539007547034"));
+  addSpecification(new Specification("BG", 22, "U04F04F02A08", "BG80BNBG96611020345678"));
+  addSpecification(new Specification("BH", 22, "U04A14", "BH67BMAG00001299123456"));
+  addSpecification(new Specification("BR", 29, "F08F05F10U01A01", "BR9700360305000010009795493P1"));
+  addSpecification(new Specification("BY", 28, "A04F04A16", "BY13NBRB3600900000002Z00AB00"));
+  addSpecification(new Specification("CH", 21, "F05A12", "CH9300762011623852957"));
+  addSpecification(new Specification("CR", 22, "F04F14", "CR72012300000171549015"));
+  addSpecification(new Specification("CY", 28, "F03F05A16", "CY17002001280000001200527600"));
+  addSpecification(new Specification("CZ", 24, "F04F06F10", "CZ6508000000192000145399"));
+  addSpecification(new Specification("DE", 22, "F08F10", "DE89370400440532013000"));
+  addSpecification(new Specification("DK", 18, "F04F09F01", "DK5000400440116243"));
+  addSpecification(new Specification("DO", 28, "U04F20", "DO28BAGR00000001212453611324"));
+  addSpecification(new Specification("EE", 20, "F02F02F11F01", "EE382200221020145685"));
+  addSpecification(new Specification("ES", 24, "F04F04F01F01F10", "ES9121000418450200051332"));
+  addSpecification(new Specification("FI", 18, "F06F07F01", "FI2112345600000785"));
+  addSpecification(new Specification("FO", 18, "F04F09F01", "FO6264600001631634"));
+  addSpecification(new Specification("FR", 27, "F05F05A11F02", "FR1420041010050500013M02606"));
+  addSpecification(new Specification("GB", 22, "U04F06F08", "GB29NWBK60161331926819"));
+  addSpecification(new Specification("GE", 22, "U02F16", "GE29NB0000000101904917"));
+  addSpecification(new Specification("GI", 23, "U04A15", "GI75NWBK000000007099453"));
+  addSpecification(new Specification("GL", 18, "F04F09F01", "GL8964710001000206"));
+  addSpecification(new Specification("GR", 27, "F03F04A16", "GR1601101250000000012300695"));
+  addSpecification(new Specification("GT", 28, "A04A20", "GT82TRAJ01020000001210029690"));
+  addSpecification(new Specification("HR", 21, "F07F10", "HR1210010051863000160"));
+  addSpecification(new Specification("HU", 28, "F03F04F01F15F01", "HU42117730161111101800000000"));
+  addSpecification(new Specification("IE", 22, "U04F06F08", "IE29AIBK93115212345678"));
+  addSpecification(new Specification("IL", 23, "F03F03F13", "IL620108000000099999999"));
+  addSpecification(new Specification("IS", 26, "F04F02F06F10", "IS140159260076545510730339"));
+  addSpecification(new Specification("IT", 27, "U01F05F05A12", "IT60X0542811101000000123456"));
+  addSpecification(new Specification("IQ", 23, "U04F03A12", "IQ98NBIQ850123456789012"));
+  addSpecification(new Specification("JO", 30, "A04F22", "JO15AAAA1234567890123456789012"));
+  addSpecification(new Specification("KW", 30, "U04A22", "KW81CBKU0000000000001234560101"));
+  addSpecification(new Specification("KZ", 20, "F03A13", "KZ86125KZT5004100100"));
+  addSpecification(new Specification("LB", 28, "F04A20", "LB62099900000001001901229114"));
+  addSpecification(new Specification("LC", 32, "U04F24", "LC07HEMM000100010012001200013015"));
+  addSpecification(new Specification("LI", 21, "F05A12", "LI21088100002324013AA"));
+  addSpecification(new Specification("LT", 20, "F05F11", "LT121000011101001000"));
+  addSpecification(new Specification("LU", 20, "F03A13", "LU280019400644750000"));
+  addSpecification(new Specification("LV", 21, "U04A13", "LV80BANK0000435195001"));
+  addSpecification(new Specification("MC", 27, "F05F05A11F02", "MC5811222000010123456789030"));
+  addSpecification(new Specification("MD", 24, "U02A18", "MD24AG000225100013104168"));
+  addSpecification(new Specification("ME", 22, "F03F13F02", "ME25505000012345678951"));
+  addSpecification(new Specification("MK", 19, "F03A10F02", "MK07250120000058984"));
+  addSpecification(new Specification("MR", 27, "F05F05F11F02", "MR1300020001010000123456753"));
+  addSpecification(new Specification("MT", 31, "U04F05A18", "MT84MALT011000012345MTLCAST001S"));
+  addSpecification(new Specification("MU", 30, "U04F02F02F12F03U03", "MU17BOMM0101101030300200000MUR"));
+  addSpecification(new Specification("NL", 18, "U04F10", "NL91ABNA0417164300"));
+  addSpecification(new Specification("NO", 15, "F04F06F01", "NO9386011117947"));
+  addSpecification(new Specification("PK", 24, "U04A16", "PK36SCBL0000001123456702"));
+  addSpecification(new Specification("PL", 28, "F08F16", "PL61109010140000071219812874"));
+  addSpecification(new Specification("PS", 29, "U04A21", "PS92PALS000000000400123456702"));
+  addSpecification(new Specification("PT", 25, "F04F04F11F02", "PT50000201231234567890154"));
+  addSpecification(new Specification("QA", 29, "U04A21", "QA30AAAA123456789012345678901"));
+  addSpecification(new Specification("RO", 24, "U04A16", "RO49AAAA1B31007593840000"));
+  addSpecification(new Specification("RS", 22, "F03F13F02", "RS35260005601001611379"));
+  addSpecification(new Specification("SA", 24, "F02A18", "SA0380000000608010167519"));
+  addSpecification(new Specification("SC", 31, "U04F04F16U03", "SC18SSCB11010000000000001497USD"));
+  addSpecification(new Specification("SE", 24, "F03F16F01", "SE4550000000058398257466"));
+  addSpecification(new Specification("SI", 19, "F05F08F02", "SI56263300012039086"));
+  addSpecification(new Specification("SK", 24, "F04F06F10", "SK3112000000198742637541"));
+  addSpecification(new Specification("SM", 27, "U01F05F05A12", "SM86U0322509800000000270100"));
+  addSpecification(new Specification("ST", 25, "F08F11F02", "ST68000100010051845310112"));
+  addSpecification(new Specification("SV", 28, "U04F20", "SV62CENR00000000000000700025"));
+  addSpecification(new Specification("TL", 23, "F03F14F02", "TL380080012345678910157"));
+  addSpecification(new Specification("TN", 24, "F02F03F13F02", "TN5910006035183598478831"));
+  addSpecification(new Specification("TR", 26, "F05F01A16", "TR330006100519786457841326"));
+  addSpecification(new Specification("UA", 29, "F25", "UA511234567890123456789012345"));
+  addSpecification(new Specification("VG", 24, "U04F16", "VG96VPVG0000012345678901"));
+  addSpecification(new Specification("XK", 20, "F04F10F02", "XK051212012345678906"));
+  // The following countries are not included in the official IBAN registry but use the IBAN specification
+  // Angola
+  addSpecification(new Specification("AO", 25, "F21", "AO69123456789012345678901"));
+  // Burkina
+  addSpecification(new Specification("BF", 27, "F23", "BF2312345678901234567890123"));
+  // Burundi
+  addSpecification(new Specification("BI", 16, "F12", "BI41123456789012"));
+  // Benin
+  addSpecification(new Specification("BJ", 28, "F24", "BJ39123456789012345678901234"));
+  // Ivory
+  addSpecification(new Specification("CI", 28, "U01F23", "CI17A12345678901234567890123"));
+  // Cameron
+  addSpecification(new Specification("CM", 27, "F23", "CM9012345678901234567890123"));
+  // Cape Verde
+  addSpecification(new Specification("CV", 25, "F21", "CV30123456789012345678901"));
+  // Algeria
+  addSpecification(new Specification("DZ", 24, "F20", "DZ8612345678901234567890"));
+  // Iran
+  addSpecification(new Specification("IR", 26, "F22", "IR861234568790123456789012"));
+  // Madagascar
+  addSpecification(new Specification("MG", 27, "F23", "MG1812345678901234567890123"));
+  // Mali
+  addSpecification(new Specification("ML", 28, "U01F23", "ML15A12345678901234567890123"));
+  // Mozambique
+  addSpecification(new Specification("MZ", 25, "F21", "MZ25123456789012345678901"));
+  // Senegal
+  addSpecification(new Specification("SN", 28, "U01F23", "SN52A12345678901234567890123"));
+
+  var NON_ALPHANUM = /[^a-zA-Z0-9]/g,
+    EVERY_FOUR_CHARS = /(.{4})(?!$)/g;
+
+  /**
+   * Utility function to check if a variable is a String.
+   *
+   * @param v
+   * @returns {boolean} true if the passed variable is a String, false otherwise.
+   */
+  function isString(v) {
+    return typeof v == "string" || v instanceof String;
+  }
+
+  /**
+   * Check if an IBAN is valid.
+   *
+   * @param {String} iban the IBAN to validate.
+   * @returns {boolean} true if the passed IBAN is valid, false otherwise
+   */
+  exports.isValid = function(iban) {
+    if (!isString(iban)) {
+      return false;
+    }
+    iban = electronicFormat(iban);
+    var countryStructure = countries[iban.slice(0, 2)];
+    return !!countryStructure && countryStructure.isValid(iban);
+  };
+
+  /**
+   * Convert an IBAN to a BBAN.
+   *
+   * @param iban
+   * @param {String} [separator] the separator to use between the blocks of the BBAN, defaults to ' '
+   * @returns {string|*}
+   */
+  exports.toBBAN = function(iban, separator) {
+    if (typeof separator == "undefined") {
+      separator = " ";
+    }
+
+    iban = electronicFormat(iban);
+    var countryStructure = countries[iban.slice(0, 2)];
+    if (!countryStructure) {
+      throw new Error("No country with code " + iban.slice(0, 2));
+    }
+
+    return countryStructure.toBBAN(iban, separator);
+  };
+
+  /**
+   * Convert the passed BBAN to an IBAN for this country specification.
+   * Please note that <i>"generation of the IBAN shall be the exclusive responsibility of the bank/branch servicing the account"</i>.
+   * This method implements the preferred algorithm described in http://en.wikipedia.org/wiki/International_Bank_Account_Number#Generating_IBAN_check_digits
+   *
+   * @param countryCode the country of the BBAN
+   * @param bban the BBAN to convert to IBAN
+   * @returns {string} the IBAN
+   */
+  exports.fromBBAN = function(countryCode, bban) {
+    var countryStructure = countries[countryCode];
+    if (!countryStructure) {
+      throw new Error("No country with code " + countryCode);
+    }
+    return countryStructure.fromBBAN(electronicFormat(bban));
+  };
+
+  /**
+   * Check the validity of the passed BBAN.
+   *
+   * @param countryCode the country of the BBAN
+   * @param bban the BBAN to check the validity of
+   */
+  exports.isValidBBAN = function(countryCode, bban) {
+    if (!isString(bban)) {
+      return false;
+    }
+    var countryStructure = countries[countryCode];
+    return countryStructure && countryStructure.isValidBBAN(electronicFormat(bban));
+  };
+
+  /**
+   *
+   * @param iban
+   * @param separator
+   * @returns {string}
+   */
+  exports.printFormat = function(iban, separator) {
+    if (typeof separator == "undefined") {
+      separator = " ";
+    }
+    return electronicFormat(iban).replace(EVERY_FOUR_CHARS, "$1" + separator);
+  };
+  exports.electronicFormat = electronicFormat;
+
+  /**
+   * An object containing all the known IBAN specifications.
+   */
+  exports.countries = countries;
+});
+
+/**
+ * Validate IBAN
+ * @returns {Boolean}
+ */
+function validateIBAN() {
+  // v2018
+  // If the payment method is not direct debit, the IBAN must not be validated
+  if (document.getElementById("stic_Payment_Commitments___payment_method").value == "direct_debit") {
+    var bankAccount = document.getElementById("stic_Payment_Commitments___bank_account");
+    bankAccount.value = bankAccount.value.toUpperCase();
+    if (bankAccount == null) {
+      // If there is no account number it will give error
+      return false;
+    } else {
+      if (!IBAN.isValid(bankAccount.value)) {
+        alert(stic_Payment_Commitments_LBL_IBAN_NOT_VALID);
+        selectTextInput(bankAccount);
+        return false;
+      }
+    }
+  }
+  return true;
+}
+/**
+ * This file is part of SinergiaCRM.
+ * SinergiaCRM is a work developed by SinergiaTIC Association, based on SuiteCRM.
+ * Copyright (C) 2013 - 2023 SinergiaTIC Association
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Affero General Public License version 3 as published by the
+ * Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program; if not, see http://www.gnu.org/licenses or write to the Free
+ * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301 USA.
+ *
+ * You can contact SinergiaTIC Association at email address info@sinergiacrm.org.
+ */
+/**
+ * Overload the data validation function to include the validation of the payment methods fields
+ */
+(function() {
+  var tmpCheckFields = checkFields;
+  checkFields = function() {
+    if (tmpCheckFields) {
+      return tmpCheckFields() && validateIBAN();
+    }
+    return validateIBAN();
+  };
+})();
+
+/**
+ * Adapt the form based on the value of the payment method
+ */
+function adaptPaymentMethod(oPaymentMethod) {
+  // Retrieve the html element of payment method
+  var vPaymentMethod = oPaymentMethod.options[oPaymentMethod.selectedIndex].value;
+
+  // If the payment method is a direct debit, it shows the account number field and marks it as required.
+  if (vPaymentMethod == "direct_debit") {
+    showField("stic_Payment_Commitments___bank_account");
+    addRequired("stic_Payment_Commitments___bank_account");
+  } else {
+    hideField("stic_Payment_Commitments___bank_account");
+    removeRequired("stic_Payment_Commitments___bank_account");
+  }
+  oPaymentMethod.prev_value = vPaymentMethod;
+}
+
+		</script>
 
 <script>
-let BarcodeReady = ('BarcodeDetector' in window);
-let detector = null;
-if (BarcodeReady) {
-  try { detector = new BarcodeDetector({formats: ['qr_code']}); } catch(e){ BarcodeReady = false; }
-}
+document.addEventListener('DOMContentLoaded', function(){
+  // --- Paràmetres ---
+  var PREU_GENERAL   = 38;
+  var PREU_ACTIVISTA = 33;
+  var CODIS          = ['activistesxxiinitescolavalenciana','activistanit2025'];
 
-let rows = [], header = [], codeKey = 'ID';
-let answersRows = [], answersHeader = [], answersCodeKey = 'ID';
-const validMap = new Map();
-const validatedSet = new Set(); // IDs ja registrats al full de respostes (persistents)
+  // --- Elements del formulari ---
+  var tarifaSel = document.getElementById('stic_Registrations___tipus_tarifa_c');
+  var inputCodi = document.getElementById('stic_Registrations___codi_descompte_c');
+  var amountInp = document.getElementById('stic_Payment_Commitments___amount');
+  var totalSpan = document.getElementById('total_display');
+  var form      = document.getElementById('WebToLeadForm');
 
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let stream = null, loopId = null;
+  // --- Helpers ---
+  function fmt(n){ return Number(n).toFixed(2).replace('.', ',') + ' €'; }
+  function norm(s){ return (s||'').normalize('NFKD').trim().toLowerCase(); }
+  function codiValid(s){ s = norm(s); return CODIS.some(function(c){ return norm(c) === s; }); }
 
-const summary = document.getElementById('summary');
-const answersSummary = document.getElementById('answersSummary');
-const scanStatus = document.getElementById('scanStatus');
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
-const manualCode = document.getElementById('manualCode');
-const recentTable = document.querySelector('#recentTable tbody');
+  function aplicaGeneral(){
+    if (tarifaSel && typeof setSelectValue==='function') setSelectValue(tarifaSel,'tarifa_general');
+    if (amountInp) amountInp.value = PREU_GENERAL;
+    if (totalSpan) totalSpan.textContent = fmt(PREU_GENERAL);
+  }
+  function aplicaActivista(){
+    if (tarifaSel && typeof setSelectValue==='function') setSelectValue(tarifaSel,'tarifa_activista');
+    if (amountInp) amountInp.value = PREU_ACTIVISTA;
+    if (totalSpan) totalSpan.textContent = fmt(PREU_ACTIVISTA);
+  }
 
-const loadSheetBtn = document.getElementById('loadSheetBtn');
-const refreshBtn = document.getElementById('refreshBtn');
-const sheetUrlInput = document.getElementById('sheetUrl');
+  // Estat inicial i amaga "Tipus de tarifa"
+  aplicaGeneral();
+  if (tarifaSel){
+    var tr = tarifaSel.closest ? tarifaSel.closest('tr') : null;
+    if (tr) tr.style.display = 'none';
+    if (typeof hideField==='function') hideField('stic_Registrations___tipus_tarifa_c');
+  }
 
-const loadAnswersBtn = document.getElementById('loadAnswersBtn');
-const refreshAnswersBtn = document.getElementById('refreshAnswersBtn');
-const answersUrlInput = document.getElementById('answersUrl');
+  // Reacció al codi
+  if (inputCodi){
+    inputCodi.addEventListener('input', function(){
+      if (codiValid(inputCodi.value)){
+        aplicaActivista();
+        inputCodi.style.borderBottomColor = '#22c55e';
+        inputCodi.title = "Codi correcte. S'aplica la tarifa d'Activista (33 €).";
+      } else {
+        aplicaGeneral();
+        inputCodi.style.borderBottomColor = '';
+        inputCodi.title = "";
+      }
+    });
+  }
 
-const fallbacks = document.getElementById('fallbacks');
-const codeColumn = document.getElementById('codeColumn');
-const answersCodeColumn = document.getElementById('answersCodeColumn');
-
-const countOk = document.getElementById('countOk');
-const countTotal = document.getElementById('countTotal');
-const testCsvLink = document.getElementById('testCsvLink');
-const testAnswersCsvLink = document.getElementById('testAnswersCsvLink');
-const errorBox = document.getElementById('errorBox');
-const computedUrl = document.getElementById('computedUrl');
-const computedAnswersUrl = document.getElementById('computedAnswersUrl');
-const formActionInput = document.getElementById('formAction');
-const formFieldInput = document.getElementById('formField');
-const hiddenForm = document.getElementById('hiddenForm');
-const answersCount = document.getElementById('answersCount');
-
-const cooldownSlider = document.getElementById('cooldownSlider');
-const cooldownVal = document.getElementById('cooldownVal');
-
-let lastCsvUrl = null;
-let lastAnswersCsvUrl = null;
-
-// Anti-spam / cooldown
-let blockUntil = 0;
-let cooldownMs = parseInt(cooldownSlider.value, 10) || 1500;
-const lastSeenAt = new Map();
-const dedupeMs = 2000;
-
-cooldownSlider.addEventListener('input', ()=>{
-  cooldownMs = parseInt(cooldownSlider.value,10) || 1500;
-  cooldownVal.textContent = cooldownMs;
+  // Defensa en enviar
+  if (form){
+    form.addEventListener('submit', function(){
+      if (inputCodi && codiValid(inputCodi.value)) aplicaActivista(); else aplicaGeneral();
+    });
+  }
 });
-
-function toCSVFromSheet(viewUrl){
-  if(!viewUrl) return null;
-  const m = viewUrl.match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^\/]+)(?:\/.*)?$/);
-  if(!m) return null;
-  const id = m[1];
-  const gidMatch = viewUrl.match(/[?&]gid=(\d+)/) || viewUrl.match(/[#]gid=(\d+)/);
-  const gid = gidMatch ? gidMatch[1] : '0';
-  return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
-}
-
-async function loadCSVByUrl(url, type){
-  const isAnswers = (type === 'answers');
-  try{
-    const res = await fetch(url, {cache:'no-store'});
-    if(!res.ok){ throw new Error('HTTP '+res.status+' '+res.statusText); }
-    const text = await res.text();
-    if(isAnswers){
-      parseAnswersCSV(text);
-      buildAnswersSet();
-      updateAnswersSummary();
-      refreshAnswersBtn.disabled = false;
-    }else{
-      parseCSV(text);
-      buildMap();
-      updateSummary();
-      startBtn.disabled = false; refreshBtn.disabled = false;
-    }
-  }catch(e){
-    const targetBox = isAnswers ? answersSummary : errorBox;
-    if(isAnswers){
-      answersSummary.className = 'status err';
-      answersSummary.textContent = 'No s’ha pogut carregar el CSV de respostes: ' + (e && e.message ? e.message : e);
-    }else{
-      errorBox.textContent = 'No s’ha pogut carregar el CSV: ' + (e && e.message ? e.message : e);
-      errorBox.classList.remove('hidden');
-    }
-    console.error(e);
-  }
-}
-
-function parseCSV(text){
-  rows = []; header = [];
-  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.trim().length>0);
-  if(!lines.length) return;
-  header = splitCSVLine(lines[0]);
-  for(let i=1;i<lines.length;i++){
-    const vals = splitCSVLine(lines[i]);
-    const obj = {};
-    for(let j=0;j<header.length;j++){ obj[header[j]] = (vals[j] ?? '').trim(); }
-    rows.push(obj);
-  }
-  // Detecta columna ID o mostra fallback
-  const hasID = header.some(h => h.trim().toLowerCase() === 'id');
-  if(hasID){
-    codeKey = header.find(h => h.trim().toLowerCase() === 'id');
-  }else{
-    fillFallbacks();
-    codeKey = header[0];
-  }
-}
-function parseAnswersCSV(text){
-  answersRows = []; answersHeader = [];
-  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.trim().length>0);
-  if(!lines.length) return;
-  answersHeader = splitCSVLine(lines[0]);
-  for(let i=1;i<lines.length;i++){
-    const vals = splitCSVLine(lines[i]);
-    const obj = {};
-    for(let j=0;j<answersHeader.length;j++){ obj[answersHeader[j]] = (vals[j] ?? '').trim(); }
-    answersRows.push(obj);
-  }
-  const hasID = answersHeader.some(h => h.trim().toLowerCase() === 'id');
-  if(hasID){
-    answersCodeKey = answersHeader.find(h => h.trim().toLowerCase() === 'id');
-  }else{
-    fillFallbacks();
-    answersCodeKey = answersHeader[0];
-  }
-}
-function fillFallbacks(){
-  fallbacks.classList.remove('hidden');
-  // inscripcions
-  codeColumn.innerHTML = '';
-  header.forEach(h=>{ const opt=document.createElement('option'); opt.value=h; opt.textContent=h; codeColumn.appendChild(opt); });
-  codeColumn.onchange = ()=>{ codeKey = codeColumn.value; buildMap(); updateSummary(); };
-  // respostes
-  answersCodeColumn.innerHTML = '';
-  answersHeader.forEach(h=>{ const opt=document.createElement('option'); opt.value=h; opt.textContent=h; answersCodeColumn.appendChild(opt); });
-  answersCodeColumn.onchange = ()=>{ answersCodeKey = answersCodeColumn.value; buildAnswersSet(); updateAnswersSummary(); };
-}
-
-function splitCSVLine(line){
-  const out = []; let cur=''; let inQ=false;
-  for(let i=0;i<line.length;i++){
-    const c=line[i];
-    if(c=='"'){ if(inQ && line[i+1]=='"'){cur+='"'; i++;} else {inQ=!inQ;} }
-    else if(c==',' && !inQ){ out.push(cur); cur=''; }
-    else { cur+=c; }
-  }
-  out.push(cur); return out;
-}
-
-function buildMap(){
-  validMap.clear();
-  let ok=0;
-  for(const r of rows){
-    const code = (r[codeKey] || '').trim();
-    if(!code) continue;
-    const checked = false;
-    if(checked) ok++;
-    validMap.set(code, {row:r, checked});
-  }
-  countOk.textContent = ok;
-  countTotal.textContent = validMap.size;
-}
-function buildAnswersSet(){
-  validatedSet.clear();
-  for(const r of answersRows){
-    const code = (r[answersCodeKey] || '').trim();
-    if(!code) continue;
-    validatedSet.add(code);
-  }
-}
-function updateSummary(){
-  summary.className='status ok';
-  summary.textContent = `Càrrega correcta · ${validMap.size} codis · Columna ID: ${codeKey}`;
-}
-function updateAnswersSummary(){
-  answersSummary.className='status ok';
-  answersSummary.textContent = `Respostes carregades · ${validatedSet.size} codis amb check-in · Columna ID: ${answersCodeKey}`;
-  answersCount.textContent = validatedSet.size;
-}
-
-loadSheetBtn.addEventListener('click', async ()=>{
-  const v = sheetUrlInput.value.trim();
-  if(!v){ alert('Posa l’enllaç de visualització del Google Sheets d’inscripcions.'); return; }
-  const csvUrl = toCSVFromSheet(v);
-  if(!csvUrl){ alert('Enllaç de Google Sheets no vàlid.'); return; }
-  lastCsvUrl = csvUrl;
-  computedUrl.textContent = 'CSV inscripcions: '+csvUrl;
-  testCsvLink.href = csvUrl;
-  await loadCSVByUrl(csvUrl, 'inscripcions');
-});
-
-refreshBtn.addEventListener('click', async ()=>{
-  if(!lastCsvUrl){ alert('Carrega abans el full d’inscripcions.'); return; }
-  await loadCSVByUrl(lastCsvUrl, 'inscripcions');
-  summary.className='status ok';
-  summary.textContent='Dades d’inscripcions refrescades.';
-});
-
-loadAnswersBtn.addEventListener('click', async ()=>{
-  const v = answersUrlInput.value.trim();
-  if(!v){ alert('Posa l’enllaç de visualització del full de respostes.'); return; }
-  const csvUrl = toCSVFromSheet(v);
-  if(!csvUrl){ alert('Enllaç de Google Sheets no vàlid.'); return; }
-  lastAnswersCsvUrl = csvUrl;
-  computedAnswersUrl.textContent = 'CSV respostes: '+csvUrl;
-  testAnswersCsvLink.href = csvUrl;
-  await loadCSVByUrl(csvUrl, 'answers');
-});
-
-refreshAnswersBtn.addEventListener('click', async ()=>{
-  if(!lastAnswersCsvUrl){ alert('Carrega abans el full de respostes.'); return; }
-  await loadCSVByUrl(lastAnswersCsvUrl, 'answers');
-  answersSummary.className='status ok';
-  answersSummary.textContent='Dades de respostes refrescades.';
-});
-
-async function startCamera(){
-  if(stream) return;
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    video.srcObject = stream;
-    await video.play();
-    startBtn.disabled = true; stopBtn.disabled = false; scanLoop();
-  }catch(e){ alert('No s’ha pogut iniciar la càmera. HTTPS i permisos necessaris.'); }
-}
-function stopCamera(){
-  if(loopId){ cancelAnimationFrame(loopId); loopId=null; }
-  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  stopBtn.disabled = true; startBtn.disabled = false;
-}
-startBtn.addEventListener('click', startCamera);
-stopBtn.addEventListener('click', stopCamera);
-
-async function scanLoop(){
-  if(!video.videoWidth){ loopId=requestAnimationFrame(scanLoop); return; }
-  if (Date.now() < blockUntil) { loopId = requestAnimationFrame(scanLoop); return; }
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
-  let code=null;
-  if(('BarcodeDetector' in window) && detector){
-    try{
-      const barcodes = await detector.detect(canvas);
-      if(barcodes && barcodes.length){ code = (barcodes[0].rawValue || '').trim(); }
-    }catch(e){}
-  }
-  if(code){ handleCode(code); }
-  loopId = requestAnimationFrame(scanLoop);
-}
-manualCode.addEventListener('keydown', e=>{
-  if(e.key==='Enter'){ e.preventDefault(); handleCode(manualCode.value); manualCode.select(); }
-});
-
-function handleCode(codeRaw){
-  const code = String(codeRaw||'').trim();
-  if(!code) return;
-
-  const nowTs = Date.now();
-  const lastTs = lastSeenAt.get(code) || 0;
-  if (nowTs - lastTs < dedupeMs) { return; }
-  lastSeenAt.set(code, nowTs);
-
-  const now = new Date();
-  const rec = validMap.get(code);
-
-  // 1) No trobat al full d’inscripcions
-  if(!rec){
-    scanStatus.className='status err'; scanStatus.textContent='No trobat · '+code;
-    addRecent(now, code, {Nom:'',Email:''}, 'bad');
-    blockUntil = Date.now() + cooldownMs;
-    if (navigator.vibrate) navigator.vibrate(60);
-    return;
-  }
-
-  // 2) Ja validat segons FULL DE RESPOSTES (persistència)
-  if(validatedSet.has(code)){
-    scanStatus.className='status warn'; scanStatus.textContent='Ja validat · '+code;
-    addRecent(now, code, rec.row, 'full');
-    blockUntil = Date.now() + cooldownMs;
-    if (navigator.vibrate) navigator.vibrate(60);
-    return;
-  }
-
-  // 3) Ja validat en aquesta sessió
-  if(rec.checked){
-    scanStatus.className='status warn'; scanStatus.textContent='Ja validat · '+code;
-    addRecent(now, code, rec.row, 'dup');
-    blockUntil = Date.now() + cooldownMs;
-    if (navigator.vibrate) navigator.vibrate(60);
-    return;
-  }
-
-  // 4) VALIDAR: enviar al Google Form (si està configurat) i marcar sessió
-  const action = formActionInput.value.trim();
-  const field = formFieldInput.value.trim();
-  if(action && field){ submitToGoogleForm(action, field, code); }
-
-  rec.checked = true;
-  countOk.textContent = String(Number(countOk.textContent||'0') + 1);
-  scanStatus.className='status ok'; scanStatus.textContent='VALIDAT · '+code;
-  addRecent(now, code, rec.row, 'ok');
-
-  // Pausa
-  blockUntil = Date.now() + cooldownMs;
-  if (navigator.vibrate) navigator.vibrate(80);
-}
-
-function submitToGoogleForm(action, field, code){
-  hiddenForm.action = action;
-  hiddenForm.innerHTML = '';
-  const input = document.createElement('input');
-  input.type = 'hidden'; input.name = field; input.value = code;
-  hiddenForm.appendChild(input);
-  hiddenForm.submit();
-}
-
-function addRecent(date, code, row, kind){
-  const tr = document.createElement('tr');
-  const name = row?.Nom || row?.nom || row?.FirstName || row?.first_name || '';
-  const email = row?.Email || row?.email || '';
-  const assist = getAssistents(row); // NOVA columna
-  tr.innerHTML = `
-    <td>${date.toLocaleTimeString()}</td>
-    <td>${escapeHtml(code)}</td>
-    <td>${escapeHtml(assist)}</td>
-    <td>${escapeHtml(name)}</td>
-    <td>${escapeHtml(email)}</td>
-    <td>${statusPill(kind)}</td>`;
-  recentTable.prepend(tr);
-  while (recentTable.children.length > 20) {
-    recentTable.removeChild(recentTable.lastChild);
-  }
-}
-
-function statusPill(kind){
-  if(kind==='ok') return '<span class="pill pill-ok">OK</span>';
-  if(kind==='dup') return '<span class="pill pill-dup">DUP</span>';
-  if(kind==='full') return '<span class="pill pill-full">FULL</span>';
-  return '<span class="pill" style="background:#fee2e2;color:#991b1b;">N/D</span>';
-}
-function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" })[m]);
-}
-function getAssistents(row){
-  const aliases = ['Assistents','assistents','Asistentes','attendees','Attendees','Nombre d\'assistents','n_assistents'];
-  for(const k of aliases){
-    if (row && Object.prototype.hasOwnProperty.call(row, k)) {
-      const v = String(row[k] ?? '').trim();
-      if (v === '') return '';
-      const n = parseInt(v, 10);
-      return Number.isFinite(n) ? String(n) : v; // si no és enter, mostra tal qual
-    }
-  }
-  return '';
-}
-  
 </script>
-</body>
+
+
+
+	</body>
 </html>
