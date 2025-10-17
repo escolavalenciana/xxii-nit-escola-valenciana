@@ -170,6 +170,22 @@
 .tableForm textarea{ min-height: 80px; }
 
 
+				/* Separador fantasma: canvia la paritat sense deixar buit */
+@media (min-width:820px){
+  .tableForm .section > tr.ghost {
+    float: left;
+    width: 48%;
+    padding-right: 2%;
+    height: 0; margin: 0; padding-top: 0; padding-bottom: 0; border: 0;
+  }
+  .tableForm .section > tr.ghost td,
+  .tableForm .section > tr.ghost td span {
+    display:block; height:0; margin:0; padding:0 !important; border:0 !important;
+  }
+}
+@media (max-width:819px){
+  .tableForm .section > tr.ghost { display:none; }
+}
 
 
 
@@ -412,6 +428,14 @@
       </span>
     </td>
   </tr>
+
+<!--A -->
+<tr class="ghost" aria-hidden="true">
+  <td class="column_25"><span></span></td>
+  <td class="column_25"><span></span></td>
+</tr>
+<!--A -->
+	
   <tr>
   <td id="td_lbl_stic_Registrations___tipus_menu_c" class="column_25">
     <span><label id="lbl_stic_Registrations___tipus_menu_c" for="stic_Registrations___tipus_menu_c">Tipus de menú:</label></span>
